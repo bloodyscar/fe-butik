@@ -1,3 +1,5 @@
+import '../utils/price_formatter.dart';
+
 class OrderItem {
   final int? id;
   final int? orderId;
@@ -60,8 +62,8 @@ class OrderItem {
 
   // Helper methods
   double get subtotal => unitPrice * quantity;
-  String get formattedUnitPrice => 'Rp ${unitPrice.toStringAsFixed(2)}';
-  String get formattedSubtotal => 'Rp ${subtotal.toStringAsFixed(2)}';
+  String get formattedUnitPrice => PriceFormatter.formatPrice(unitPrice);
+  String get formattedSubtotal => PriceFormatter.formatPrice(subtotal);
 
   @override
   String toString() {
@@ -136,9 +138,9 @@ class Order {
 
   // Helper methods
   double get subtotalPrice => totalPrice - shippingCost;
-  String get formattedTotalPrice => 'Rp ${totalPrice.toStringAsFixed(2)}';
-  String get formattedShippingCost => 'Rp ${shippingCost.toStringAsFixed(2)}';
-  String get formattedSubtotalPrice => 'Rp ${subtotalPrice.toStringAsFixed(2)}';
+  String get formattedTotalPrice => PriceFormatter.formatPrice(totalPrice);
+  String get formattedShippingCost => PriceFormatter.formatPrice(shippingCost);
+  String get formattedSubtotalPrice => PriceFormatter.formatPrice(subtotalPrice);
 
   @override
   String toString() {

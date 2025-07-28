@@ -4,6 +4,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../models/product.dart';
+import '../../service/session_manager.dart';
+import '../../utils/price_formatter.dart';
 import 'detail_product_page.dart';
 import 'cart_user.dart';
 import 'order_page.dart';
@@ -80,53 +82,6 @@ class _HomeUserState extends State<HomeUser> {
         elevation: 2,
         actions: [
           // Order notification icon
-          Consumer<OrderProvider>(
-            builder: (context, orderProvider, child) {
-              final ordersNeedingProof = orderProvider.orders.where((order) =>
-                (order.status.toLowerCase() == 'belum bayar') &&
-                (order.transferProof == null || order.transferProof!.isEmpty)
-              ).toList();
-
-              return Stack(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.receipt_long),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const OrderPage()),
-                      );
-                    },
-                  ),
-                  if (ordersNeedingProof.isNotEmpty)
-                    Positioned(
-                      right: 6,
-                      top: 6,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade600,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Text(
-                          '${ordersNeedingProof.length}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.shopping_cart),
             onPressed: () {
@@ -187,10 +142,41 @@ class _HomeUserState extends State<HomeUser> {
                       leading: const Icon(Icons.logout),
                       title: const Text('Logout'),
                       onTap: () async {
-                        await authProvider.logout();
-                        Navigator.of(
-                          context,
-                        ).pushNamedAndRemoveUntil('/login', (route) => false);
+                        // First close the popup menu
+                        Navigator.of(context).pop();
+                        
+                        // Show confirmation dialog
+                        final shouldLogout = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Logout'),
+                            content: const Text('Are you sure you want to logout?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(true),
+                                child: const Text('Logout'),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.red,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (shouldLogout == true) {
+                          // Show loading dialog while logging out
+                          await SessionManager.clearSession();
+                              Navigator.of(context).pushNamedAndRemoveUntil(
+                                '/login',
+                                (route) => false,
+                              );
+                          
+                          
+                        }
                       },
                     ),
                   ),
@@ -701,10 +687,6 @@ class _HomeUserState extends State<HomeUser> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Order'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart),
-            label: 'Cart',
-          ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
         onTap: (index) {
@@ -846,7 +828,7 @@ class _HomeUserState extends State<HomeUser> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          product.price,
+                          PriceFormatter.formatPrice(product.price),
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.bold,

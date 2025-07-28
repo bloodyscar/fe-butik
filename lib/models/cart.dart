@@ -1,3 +1,5 @@
+import '../utils/price_formatter.dart';
+
 class CartItem {
   final int id;
   final int cartId;
@@ -57,8 +59,8 @@ class CartItem {
   double get priceAsDouble => double.tryParse(productPrice) ?? 0.0;
   double get subtotalAsDouble => double.tryParse(subtotal) ?? 0.0;
 
-  String get formattedPrice => 'Rp ${productPrice}';
-  String get formattedSubtotal => 'Rp ${subtotal}';
+  String get formattedPrice => PriceFormatter.formatPrice(productPrice);
+  String get formattedSubtotal => PriceFormatter.formatPrice(subtotal);
 
   @override
   String toString() {

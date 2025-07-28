@@ -5,6 +5,7 @@ import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/order.dart';
+import '../../utils/price_formatter.dart';
 
 class CheckoutUser extends StatefulWidget {
   const CheckoutUser({super.key});
@@ -474,7 +475,7 @@ class _CheckoutUserState extends State<CheckoutUser> {
                 ),
               ),
               Text(
-                'Rp ${method['cost'].toStringAsFixed(0)}',
+                PriceFormatter.formatPrice(method['cost']),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: isSelected ? Colors.blue[600] : Colors.grey[700],
@@ -616,17 +617,17 @@ class _CheckoutUserState extends State<CheckoutUser> {
           const SizedBox(height: 16),
 
           // Summary rows
-          _buildSummaryRow('Subtotal', 'Rp ${subtotal.toStringAsFixed(2)}'),
+          _buildSummaryRow('Subtotal', PriceFormatter.formatPrice(subtotal)),
           _buildSummaryRow(
             'Shipping Cost',
             _selectedShippingMethod != null
-                ? 'Rp ${shippingCost.toStringAsFixed(0)}'
+                ? PriceFormatter.formatPrice(shippingCost)
                 : 'Select shipping method',
           ),
           const Divider(),
           _buildSummaryRow(
             'Total',
-            'Rp ${total.toStringAsFixed(2)}',
+            PriceFormatter.formatPrice(total),
             isTotal: true,
           ),
 
@@ -692,7 +693,7 @@ class _CheckoutUserState extends State<CheckoutUser> {
     final shippingCost = selectedShipping['cost'] ?? 0.0;
     final total = subtotal + shippingCost;
 
-    return 'Rp ${total.toStringAsFixed(2)}';
+    return PriceFormatter.formatPrice(total);
   }
 
   Future<void> _placeOrder(

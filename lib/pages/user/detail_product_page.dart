@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/product.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../utils/price_formatter.dart';
 import 'cart_user.dart';
 
 class DetailProductPage extends StatefulWidget {
@@ -65,7 +66,7 @@ class _DetailProductPageState extends State<DetailProductPage> {
                         ),
                       ),
                       Text(
-                        'Rp ${widget.product.price}',
+                        PriceFormatter.formatPrice(widget.product.price),
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(
                               fontWeight: FontWeight.bold,
@@ -110,17 +111,7 @@ class _DetailProductPageState extends State<DetailProductPage> {
 
                   Row(
                     children: [
-                      Expanded(
-                        child: _buildInfoCard(
-                          'Category',
-                          widget.product.category.isNotEmpty
-                              ? widget.product.category
-                              : 'Not specified',
-                          Icons.category,
-                          Colors.purple[100]!,
-                          Colors.purple[600]!,
-                        ),
-                      ),
+                     
                       const SizedBox(width: 12),
                       Expanded(
                         child: _buildInfoCard(
@@ -318,7 +309,7 @@ class _DetailProductPageState extends State<DetailProductPage> {
                       ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                     ),
                     Text(
-                      'Rp ${_calculateTotal()}',
+                      PriceFormatter.formatPrice(_calculateTotal()),
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: Colors.blue[600],
@@ -438,10 +429,10 @@ class _DetailProductPageState extends State<DetailProductPage> {
     );
   }
 
-  String _calculateTotal() {
+  double _calculateTotal() {
     final pricePerUnit = double.tryParse(widget.product.price) ?? 0.0;
     final total = pricePerUnit * quantity;
-    return total.toStringAsFixed(2);
+    return total;
   }
 
   String _formatDate(DateTime date) {
