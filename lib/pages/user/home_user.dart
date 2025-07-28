@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/product_provider.dart';
-import '../../service/product_service.dart';
+import '../../providers/order_provider.dart';
 import '../../models/product.dart';
 import 'detail_product_page.dart';
 import 'cart_user.dart';
+import 'order_page.dart';
 
 class HomeUser extends StatefulWidget {
   const HomeUser({super.key});
@@ -53,7 +54,20 @@ class _HomeUserState extends State<HomeUser> {
     // Initialize ProductProvider when the widget is first created
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProductProvider>().initialize();
+      _initializeOrderData();
     });
+  }
+
+  void _initializeOrderData() async {
+    final authProvider = context.read<AuthProvider>();
+    final orderProvider = context.read<OrderProvider>();
+
+    if (authProvider.user != null && authProvider.user!.id != null) {
+      // Set current user ID in order provider
+      orderProvider.setCurrentUserId(authProvider.user!.id!);
+      // Load user orders silently (don't show loading indicators)
+      await orderProvider.loadUserOrders(refresh: true);
+    }
   }
 
   @override
@@ -65,6 +79,54 @@ class _HomeUserState extends State<HomeUser> {
         foregroundColor: Colors.white,
         elevation: 2,
         actions: [
+          // Order notification icon
+          Consumer<OrderProvider>(
+            builder: (context, orderProvider, child) {
+              final ordersNeedingProof = orderProvider.orders.where((order) =>
+                (order.status.toLowerCase() == 'belum bayar') &&
+                (order.transferProof == null || order.transferProof!.isEmpty)
+              ).toList();
+
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.receipt_long),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const OrderPage()),
+                      );
+                    },
+                  ),
+                  if (ordersNeedingProof.isNotEmpty)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade600,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          '${ordersNeedingProof.length}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.shopping_cart),
             onPressed: () {
@@ -93,7 +155,10 @@ class _HomeUserState extends State<HomeUser> {
                       title: const Text('My Orders'),
                       onTap: () {
                         Navigator.of(context).pop();
-                        _showComingSoon(context, 'My Orders');
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const OrderPage()),
+                        );
                       },
                     ),
                   ),
@@ -192,6 +257,108 @@ class _HomeUserState extends State<HomeUser> {
                 ),
 
                 const SizedBox(height: 20),
+
+                // Transfer Proof Notification Banner
+                Consumer<OrderProvider>(
+                  builder: (context, orderProvider, child) {
+                    // Count orders that need transfer proof
+                    final ordersNeedingProof = orderProvider.orders.where((order) =>
+                      (order.status.toLowerCase() == 'belum bayar') &&
+                      (order.transferProof == null || order.transferProof!.isEmpty)
+                    ).toList();
+
+                    if (ordersNeedingProof.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Card(
+                        color: Colors.orange.shade50,
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: Colors.orange.shade300),
+                        ),
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const OrderPage()),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.warning_amber_rounded,
+                                  color: Colors.orange.shade600,
+                                  size: 28,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Action Required',
+                                        style: TextStyle(
+                                          color: Colors.orange.shade800,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        ordersNeedingProof.length == 1
+                                            ? 'You have 1 order waiting for transfer proof upload.'
+                                            : 'You have ${ordersNeedingProof.length} orders waiting for transfer proof upload.',
+                                        style: TextStyle(
+                                          color: Colors.orange.shade700,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Tap to view and upload proof →',
+                                        style: TextStyle(
+                                          color: Colors.orange.shade600,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.arrow_forward_ios,
+                                  color: Colors.orange.shade600,
+                                  size: 16,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                // Add spacing only if notification is shown
+                Consumer<OrderProvider>(
+                  builder: (context, orderProvider, child) {
+                    final ordersNeedingProof = orderProvider.orders.where((order) =>
+                      (order.status.toLowerCase() == 'belum bayar') &&
+                      (order.transferProof == null || order.transferProof!.isEmpty)
+                    ).toList();
+                    
+                    return ordersNeedingProof.isNotEmpty 
+                        ? const SizedBox(height: 20) 
+                        : const SizedBox.shrink();
+                  },
+                ),
 
                 // Filter Section
                 Container(
@@ -530,9 +697,10 @@ class _HomeUserState extends State<HomeUser> {
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Colors.blue[600],
         unselectedItemColor: Colors.grey,
+        currentIndex: 0, // Home tab is selected
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
+          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Order'),
           BottomNavigationBarItem(
             icon: Icon(Icons.shopping_cart),
             label: 'Cart',
@@ -545,7 +713,10 @@ class _HomeUserState extends State<HomeUser> {
               // Already on home
               break;
             case 1:
-              _showComingSoon(context, 'Search');
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const OrderPage()),
+              );
               break;
             case 2:
               Navigator.push(

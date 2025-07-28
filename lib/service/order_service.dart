@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/order.dart';
 
@@ -126,7 +125,7 @@ class OrderService {
   }) async {
     try {
       final url = Uri.parse(
-        '$baseUrl/orders/user/$userId?page=$page&limit=$limit',
+        '$baseUrl?user_id=$userId&page=$page&limit=$limit',
       );
 
       print('📡 Fetching user orders from: $url');
@@ -151,7 +150,7 @@ class OrderService {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = json.decode(response.body);
-        return {'success': true, 'data': jsonData};
+        return jsonData; // Return the original JSON response directly
       } else if (response.statusCode == 404) {
         return {
           'success': false,
@@ -339,6 +338,74 @@ class OrderService {
       return {
         'success': false,
         'message': 'Error cancelling order: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Upload transfer proof for an order
+  ///
+  /// [orderId] - The ID of the order to upload proof for
+  /// [imagePath] - Local path to the transfer proof image
+  ///
+  /// Returns [Map<String, dynamic>] containing upload result
+  static Future<Map<String, dynamic>> uploadTransferProof({
+    required int orderId,
+    required String imagePath,
+  }) async {
+    try {
+      final url = Uri.parse('$baseUrl/$orderId/transfer-proof');
+
+      print('📡 Uploading transfer proof for order: $orderId');
+      print('📡 Image path: $imagePath');
+
+      // Create multipart request for file upload
+      var multipartRequest = http.MultipartRequest('POST', url);
+
+      // Add headers
+      multipartRequest.headers.addAll({'Accept': 'application/json'});
+
+      // Add the image file
+      var file = await http.MultipartFile.fromPath(
+        'transfer_proof',
+        imagePath,
+      );
+      multipartRequest.files.add(file);
+
+      print('📡 Sending transfer proof to: $url');
+
+      // Send the request with timeout
+      final streamedResponse = await multipartRequest.send().timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Upload timeout - please check your connection');
+        },
+      );
+
+      // Convert streamed response to regular response
+      final response = await http.Response.fromStream(streamedResponse);
+
+      print('📡 Upload response status: ${response.statusCode}');
+      print('📡 Upload response body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = json.decode(response.body);
+        return {
+          'success': true,
+          'message': responseData['message'] ?? 'Transfer proof uploaded successfully',
+          'data': responseData['data'],
+        };
+      } else {
+        final responseData = json.decode(response.body);
+        return {
+          'success': false,
+          'message': responseData['message'] ?? 'Failed to upload transfer proof',
+        };
+      }
+    } catch (e) {
+      print('❌ Error in uploadTransferProof: $e');
+      return {
+        'success': false,
+        'message': 'Error uploading transfer proof: ${e.toString()}',
       };
     }
   }

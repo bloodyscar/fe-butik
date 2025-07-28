@@ -112,9 +112,16 @@ class OrderProvider with ChangeNotifier {
 
       if (response['success']) {
         final ordersData = response['data']['orders'] as List? ?? [];
+        print('📦 Raw orders data count: ${ordersData.length}');
+        if (ordersData.isNotEmpty) {
+          print('📦 First order raw data: ${ordersData.first}');
+        }
+        
         List<Order> newOrders = ordersData
             .map((orderJson) => Order.fromJson(orderJson))
             .toList();
+
+        print('📦 Parsed orders count: ${newOrders.length}');
 
         if (refresh || page == 1) {
           _orders = newOrders;
@@ -313,4 +320,31 @@ class OrderProvider with ChangeNotifier {
 
   // Check if user has any orders
   bool get hasOrders => _orders.isNotEmpty;
+
+  // Upload transfer proof for an order
+  Future<bool> uploadTransferProof({
+    required int orderId,
+    required String imagePath,
+  }) async {
+    try {
+      final response = await OrderService.uploadTransferProof(
+        orderId: orderId,
+        imagePath: imagePath,
+      );
+
+      if (response['success']) {
+        // Refresh the orders to get updated data
+        await loadUserOrders(refresh: true);
+        return true;
+      } else {
+        _errorMessage = response['message'] ?? 'Failed to upload transfer proof';
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'Error uploading transfer proof: ${e.toString()}';
+      notifyListeners();
+      return false;
+    }
+  }
 }
