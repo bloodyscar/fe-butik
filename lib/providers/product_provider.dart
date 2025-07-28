@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'dart:io';
 import '../models/product.dart';
 import '../models/product_response.dart';
 import '../service/product_service.dart';
@@ -177,6 +178,72 @@ class ProductProvider with ChangeNotifier {
   void clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  // Create a new product
+  Future<Map<String, dynamic>> createProduct({
+    required String name,
+    required String description,
+    required double price,
+    required int stock,
+    required String ageRange,
+    required int ageRangeId,
+    required String size,
+    required int sizeId,
+    required String customSize,
+    File? imageFile,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await ProductService.createProduct(
+        name: name,
+        description: description,
+        price: price,
+        stock: stock,
+        ageRange: ageRange,
+        ageRangeId: ageRangeId,
+        size: size,
+        sizeId: sizeId,
+        customSize: customSize,
+        imageFile: imageFile,
+      );
+
+      _isLoading = false;
+
+      if (response['success'] == true && response['product'] != null) {
+        // Add the new product to the beginning of the list
+        _products.insert(0, response['product']);
+        notifyListeners();
+        
+        return {
+          'success': true,
+          'message': response['message'],
+          'product': response['product'],
+        };
+      } else {
+        _errorMessage = response['message'];
+        notifyListeners();
+        
+        return {
+          'success': false,
+          'message': response['message'],
+          'product': null,
+        };
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      
+      return {
+        'success': false,
+        'message': 'Failed to create product: $e',
+        'product': null,
+      };
+    }
   }
 
   // Initialize - load products for the first time

@@ -926,7 +926,7 @@ class _OrderPageState extends State<OrderPage> {
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
-                        item.productImage!,
+                        "http://10.0.2.2:3000/${item.productImage}",
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return Icon(

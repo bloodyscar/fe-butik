@@ -1,3 +1,4 @@
+import 'package:butik_evanty/pages/admin/product/product_management_admin.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -194,8 +195,12 @@ class HomeAdmin extends StatelessWidget {
                       Icons.inventory_2,
                       Colors.blue,
                       () {
-                        // TODO: Navigate to product management
-                        _showComingSoon(context, 'Product Management');
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ProductManagementAdmin(),
+                          ),
+                        );
                       },
                     ),
                     _buildActionCard(

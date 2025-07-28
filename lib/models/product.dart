@@ -6,7 +6,7 @@ class Product {
   final String category;
   final String ageRange;
   final String size;
-  final String imageUrl;
+  final String image;
   final int stock;
   final bool isActive;
   final DateTime? createdAt;
@@ -20,7 +20,7 @@ class Product {
     required this.category,
     required this.ageRange,
     required this.size,
-    required this.imageUrl,
+    required this.image,
     required this.stock,
     this.isActive = true,
     this.createdAt,
@@ -33,11 +33,11 @@ class Product {
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
       description: json['description'] ?? '',
-      price: (json['price'] ?? 0),
+      price: (json['price'] ?? 0).toString(), // Convert number to string
       category: json['category'] ?? '',
       ageRange: json['age_range'] ?? json['ageRange'] ?? '',
       size: json['size'] ?? '',
-      imageUrl: json['image_url'] ?? json['imageUrl'] ?? '',
+      image: json['image'] ?? json['image'] ?? '',
       stock: json['stock'] ?? 0,
       isActive: json['is_active'] ?? json['isActive'] ?? true,
       createdAt: json['created_at'] != null
@@ -59,7 +59,7 @@ class Product {
       'category': category,
       'age_range': ageRange,
       'size': size,
-      'image_url': imageUrl,
+      'image': image,
       'stock': stock,
       'is_active': isActive,
       'created_at': createdAt?.toIso8601String(),

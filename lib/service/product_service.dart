@@ -1,10 +1,13 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../models/product.dart';
 import '../models/product_response.dart';
 
 class ProductService {
   // API base URL for products
+  // static const String _baseUrl = 'http://10.0.2.2:3000/products';
   static const String _baseUrl = 'http://10.0.2.2:3000/products';
 
   // Get all products with optional filters and pagination
@@ -196,5 +199,100 @@ class ProductService {
     }
 
     return filter;
+  }
+
+  // Create a new product
+  static Future<Map<String, dynamic>> createProduct({
+    required String name,
+    required String description,
+    required double price,
+    required int stock,
+    required String ageRange,
+    required int ageRangeId,
+    required String size,
+    required int sizeId,
+    required String customSize,
+    File? imageFile,
+  }) async {
+    try {
+      var request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/create'));
+      
+      // Add form fields
+      request.fields.addAll({
+        'name': name,
+        'description': description,
+        'price': price.toString(),
+        'stock': stock.toString(),
+        'age_category_id': ageRangeId.toString(),
+        'size_category_id': sizeId.toString(),
+        'age_range': ageRange,
+        'size': size == 'Custom' ? customSize : size,
+      });
+
+      // Handle image file if provided
+      if (imageFile != null) {
+        String mimeType = '';
+        if (imageFile.path.endsWith('.jpg') || imageFile.path.endsWith('.jpeg')) {
+          mimeType = 'jpeg';
+        } else if (imageFile.path.endsWith('.png')) {
+          mimeType = 'png';
+        }
+
+        request.files.add(
+          await http.MultipartFile.fromPath('image', imageFile.path, contentType: MediaType('image', mimeType)),
+        );
+      }
+
+      // Send request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('Server response: $data'); // Debug log
+        
+        Product? product;
+        // Handle different response structures
+        try {
+          if (data['product'] != null) {
+            product = Product.fromJson(data['product']);
+          } else if (data['data'] != null) {
+            product = Product.fromJson(data['data']);
+          } else {
+            product = Product.fromJson(data);
+          }
+        } catch (e) {
+          print('Error parsing product: $e');
+          print('Raw data: $data');
+          return {
+            'success': false,
+            'message': 'Failed to parse product data: $e',
+            'product': null,
+          };
+        }
+
+        // Return success response with product and message
+        return {
+          'success': true,
+          'message': 'Product "$name" created successfully!',
+          'product': product,
+        };
+      } else {
+        final errorData = json.decode(response.body);
+        print('Server error response: $errorData'); // Debug log
+        return {
+          'success': false,
+          'message': errorData['message'] ?? 'Failed to create product',
+          'product': null,
+        };
+      }
+    } catch (e) {
+      print('Exception in createProduct: $e'); // Debug log
+      return {
+        'success': false,
+        'message': 'Failed to create product: $e',
+        'product': null,
+      };
+    }
   }
 }

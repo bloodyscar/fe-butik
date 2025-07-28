@@ -742,13 +742,13 @@ class _HomeUserState extends State<HomeUser> {
                   ),
                   color: Colors.grey[100],
                 ),
-                child: product.imageUrl.isNotEmpty
+                child: product.image.isNotEmpty
                     ? ClipRRect(
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(12),
                         ),
                         child: Image.network(
-                          product.imageUrl,
+                          "http://10.0.2.2:3000/${product.image}",
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                             return const Center(
