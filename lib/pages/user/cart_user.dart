@@ -679,14 +679,4 @@ class _CartUserState extends State<CartUser> {
       },
     );
   }
-
-  void _showComingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature coming soon!'),
-        backgroundColor: Colors.blue[600],
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
 }

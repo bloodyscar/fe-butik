@@ -203,3 +203,58 @@ class OrderResponse {
     return 'OrderResponse{success: $success, message: $message, error: $error}';
   }
 }
+
+class AllOrdersResponse {
+  final bool success;
+  final String? message;
+  final List<Order> orders;
+  final Map<String, dynamic>? errors;
+  final int? totalOrders;
+  final int? currentPage;
+  final int? totalPages;
+  final int? limit;
+  final bool? hasNext;
+  final bool? hasPrev;
+
+  AllOrdersResponse({
+    required this.success,
+    this.message,
+    required this.orders,
+    this.errors,
+    this.totalOrders,
+    this.currentPage,
+    this.totalPages,
+    this.limit,
+    this.hasNext,
+    this.hasPrev,
+  });
+
+  factory AllOrdersResponse.fromJson(Map<String, dynamic> json) {
+    // Handle the nested structure: data.orders and data.pagination
+    var data = json['data'] ?? {};
+    var ordersList = data['orders'] as List? ?? [];
+    var pagination = data['pagination'] ?? {};
+    
+    List<Order> orders = ordersList
+        .map((order) => Order.fromJson(order))
+        .toList();
+
+    return AllOrdersResponse(
+      success: json['success'] ?? true,
+      message: json['message'],
+      orders: orders,
+      errors: json['errors'],
+      totalOrders: pagination['total_orders'] ?? orders.length,
+      currentPage: pagination['current_page'] ?? 1,
+      totalPages: pagination['total_pages'] ?? 1,
+      limit: pagination['limit'],
+      hasNext: pagination['has_next'] ?? false,
+      hasPrev: pagination['has_prev'] ?? false,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'AllOrdersResponse{success: $success, ordersCount: ${orders.length}, totalOrders: $totalOrders, currentPage: $currentPage, totalPages: $totalPages, message: $message}';
+  }
+}

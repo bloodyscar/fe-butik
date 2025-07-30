@@ -1,9 +1,41 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/order.dart';
+import 'session_manager.dart';
+import 'package:http_parser/http_parser.dart';
 
 class OrderService {
   static const String baseUrl = 'http://10.0.2.2:3000/orders';
+
+  /// Get headers with authentication token
+  static Future<Map<String, String>> _getHeaders() async {
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+
+    final token = await SessionManager.getToken();
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+
+    return headers;
+  }
+
+  /// Get headers for multipart requests with authentication token
+  static Future<Map<String, String>> _getMultipartHeaders() async {
+    final headers = {
+      'Accept': 'application/json',
+    };
+
+    final token = await SessionManager.getToken();
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+
+    return headers;
+  }
 
   /// Create a new order
   ///
@@ -22,8 +54,9 @@ class OrderService {
       // Create multipart request for file upload support
       var multipartRequest = http.MultipartRequest('POST', url);
 
-      // Add headers
-      multipartRequest.headers.addAll({'Accept': 'application/json'});
+      // Get authenticated headers
+      final headers = await _getMultipartHeaders();
+      multipartRequest.headers.addAll(headers);
 
       // Add form fields
       multipartRequest.fields['user_id'] = request.userId.toString();
@@ -130,13 +163,13 @@ class OrderService {
 
       print('📡 Fetching user orders from: $url');
 
+      // Get authenticated headers
+      final headers = await _getHeaders();
+
       final response = await http
           .get(
             url,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
+            headers: headers,
           )
           .timeout(
             const Duration(seconds: 30),
@@ -180,17 +213,17 @@ class OrderService {
     required int orderId,
   }) async {
     try {
-      final url = Uri.parse('$baseUrl/orders/$orderId');
+      final url = Uri.parse('$baseUrl/$orderId');
 
       print('📡 Fetching order details from: $url');
+
+      // Get authenticated headers
+      final headers = await _getHeaders();
 
       final response = await http
           .get(
             url,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
+            headers: headers,
           )
           .timeout(
             const Duration(seconds: 30),
@@ -221,63 +254,102 @@ class OrderService {
     }
   }
 
-  /// Update order status (for admin use)
+  /// Update order (for admin use and user transfer proof upload)
   ///
   /// [orderId] - The ID of the order to update
-  /// [status] - New status for the order
+  /// [status] - New status for the order (optional, admin only)
+  /// [transferProof] - Transfer proof image file path (optional, user upload)
   ///
   /// Returns [Map<String, dynamic>] containing update result
-  static Future<Map<String, dynamic>> updateOrderStatus({
+  static Future<Map<String, dynamic>> updateOrder({
     required int orderId,
-    required String status,
+    String? status,
+    File? transferProof,
   }) async {
     try {
-      final url = Uri.parse('$baseUrl/orders/$orderId/status');
+      final url = Uri.parse('$baseUrl/$orderId');
 
-      final body = {'status': status};
+      print('📡 Updating order: $orderId${status != null ? ' -> $status' : ''}${transferProof != null ? ' with transfer proof' : ''}${status == null && transferProof == null ? ' (no changes)' : ''}');
 
-      print('📡 Updating order status: $orderId -> $status');
+      // Create multipart request for file upload support
+      var multipartRequest = http.MultipartRequest('PUT', url);
 
-      final response = await http
-          .put(
-            url,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-            body: json.encode(body),
-          )
-          .timeout(
-            const Duration(seconds: 30),
-            onTimeout: () {
-              throw Exception('Request timeout - please check your connection');
-            },
-          );
+      // Get authenticated headers
+      final headers = await _getMultipartHeaders();
+      multipartRequest.headers.addAll(headers);
 
-      print(
-        '📡 Update status response: ${response.statusCode} - ${response.body}',
+      // Add form fields
+      if (status != null) {
+        multipartRequest.fields['status'] = status;
+      }
+
+      // Handle image file if provided
+      if (transferProof != null) {
+        String mimeType = '';
+        if (transferProof.path.endsWith('.jpg') || transferProof.path.endsWith('.jpeg')) {
+          mimeType = 'jpeg';
+        } else if (transferProof.path.endsWith('.png')) {
+          mimeType = 'png';
+        }
+
+        multipartRequest.files.add(
+          await http.MultipartFile.fromPath('image', transferProof.path, contentType: MediaType('image', mimeType)),
+        );
+
+        multipartRequest.fields['status'] = "dikirim";
+      }
+
+      print('📡 Sending update request to: $url');
+      print('📋 Update fields: ${multipartRequest.fields}');
+
+      // Send the request with timeout
+      final streamedResponse = await multipartRequest.send().timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Request timeout - please check your connection');
+        },
       );
 
-      final responseData = json.decode(response.body);
+      // Convert streamed response to regular response
+      final response = await http.Response.fromStream(streamedResponse);
+
+      print(
+        '📡 Update order response: ${response.statusCode} - ${response.body}',
+      );
 
       if (response.statusCode == 200) {
-        return {
-          'success': true,
-          'message':
-              responseData['message'] ?? 'Order status updated successfully',
-          'data': responseData['data'],
-        };
+        try {
+          final responseData = json.decode(response.body);
+          return {
+            'success': true,
+            'message': responseData['message'] ?? 'Order updated successfully',
+            'data': responseData['data'],
+          };
+        } catch (parseError) {
+          return {
+            'success': true,
+            'message': 'Order updated successfully',
+          };
+        }
       } else {
-        return {
-          'success': false,
-          'message': responseData['message'] ?? 'Failed to update order status',
-        };
+        try {
+          final responseData = json.decode(response.body);
+          return {
+            'success': false,
+            'message': responseData['message'] ?? 'Failed to update order',
+          };
+        } catch (parseError) {
+          return {
+            'success': false,
+            'message': 'Failed to update order: ${response.statusCode}',
+          };
+        }
       }
     } catch (e) {
-      print('❌ Error in updateOrderStatus: $e');
+      print('❌ Error in updateOrder: $e');
       return {
         'success': false,
-        'message': 'Error updating order status: ${e.toString()}',
+        'message': 'Error updating order: ${e.toString()}',
       };
     }
   }
@@ -299,13 +371,13 @@ class OrderService {
 
       print('📡 Cancelling order: $orderId');
 
+      // Get authenticated headers
+      final headers = await _getHeaders();
+
       final response = await http
           .put(
             url,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
+            headers: headers,
             body: json.encode(body),
           )
           .timeout(
@@ -353,7 +425,7 @@ class OrderService {
     required String imagePath,
   }) async {
     try {
-      final url = Uri.parse('$baseUrl/$orderId/transfer-proof');
+      final url = Uri.parse('$baseUrl/$orderId');
 
       print('📡 Uploading transfer proof for order: $orderId');
       print('📡 Image path: $imagePath');
@@ -361,8 +433,9 @@ class OrderService {
       // Create multipart request for file upload
       var multipartRequest = http.MultipartRequest('POST', url);
 
-      // Add headers
-      multipartRequest.headers.addAll({'Accept': 'application/json'});
+      // Get authenticated headers
+      final headers = await _getMultipartHeaders();
+      multipartRequest.headers.addAll(headers);
 
       // Add the image file
       var file = await http.MultipartFile.fromPath(
@@ -482,5 +555,168 @@ class OrderService {
     }
 
     return null; // Validation passed
+  }
+
+  /// Get all orders for admin management
+  ///
+  /// Returns [AllOrdersResponse] containing list of all orders
+  static Future<AllOrdersResponse> getAllOrders({
+    int page = 1,
+    int limit = 20,
+    String? status,
+    String? userId,
+  }) async {
+    try {
+      // Build query parameters
+      Map<String, String> queryParams = {
+        'page': page.toString(),
+        'limit': limit.toString(),
+      };
+
+      if (status != null && status.isNotEmpty) {
+        queryParams['status'] = status;
+      }
+      
+      if (userId != null && userId.isNotEmpty) {
+        queryParams['user_id'] = userId;
+      }
+
+      // Build URI with query parameters
+      final uri = Uri.parse(baseUrl).replace(queryParameters: queryParams);
+
+      print('📡 Fetching all orders from: $uri');
+
+      // Get authenticated headers
+      final headers = await _getHeaders();
+
+      final response = await http.get(
+        uri,
+        headers: headers,
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Request timeout - please check your connection');
+        },
+      );
+
+      print('📡 Response status: ${response.statusCode}');
+      print('📡 Response body preview: ${response.body.substring(0, response.body.length > 300 ? 300 : response.body.length)}...');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        print('📋 Parsed JSON structure: ${responseData.keys.toList()}');
+        
+        final result = AllOrdersResponse.fromJson(responseData);
+        print('✅ Successfully parsed ${result.orders.length} orders');
+        print('📊 Pagination: Page ${result.currentPage}/${result.totalPages}, Total: ${result.totalOrders}');
+        
+        return result;
+      } else {
+        final errorData = jsonDecode(response.body);
+        return AllOrdersResponse(
+          success: false,
+          message: errorData['message'] ?? 'Failed to fetch orders',
+          orders: [],
+          errors: errorData['errors'] ?? {},
+        );
+      }
+    } catch (e) {
+      print('❌ Error in getAllOrders: $e');
+      return AllOrdersResponse(
+        success: false,
+        message: 'Network error: ${e.toString()}',
+        orders: [],
+        errors: {'network': e.toString()},
+      );
+    }
+  }
+
+  /// Delete an order by ID (for admin use)
+  ///
+  /// [orderId] - The ID of the order to delete
+  ///
+  /// Returns [Map<String, dynamic>] containing deletion result
+  static Future<Map<String, dynamic>> deleteOrder({
+    required int orderId,
+  }) async {
+    try {
+      final url = Uri.parse('$baseUrl/$orderId');
+
+      print('📡 Deleting order: $orderId');
+
+      // Get authenticated headers
+      final headers = await _getHeaders();
+
+      final response = await http
+          .delete(
+            url,
+            headers: headers,
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw Exception('Request timeout - please check your connection');
+            },
+          );
+
+      print(
+        '📡 Delete order response: ${response.statusCode} - ${response.body}',
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        try {
+          // Try to parse response if it has content
+          if (response.body.isNotEmpty) {
+            final responseData = json.decode(response.body);
+            return {
+              'success': true,
+              'message': responseData['message'] ?? 'Order deleted successfully',
+              'data': responseData['data'],
+            };
+          } else {
+            // No content response (204)
+            return {
+              'success': true,
+              'message': 'Order deleted successfully',
+            };
+          }
+        } catch (parseError) {
+          // If parsing fails but status is success, still return success
+          return {
+            'success': true,
+            'message': 'Order deleted successfully',
+          };
+        }
+      } else if (response.statusCode == 404) {
+        return {
+          'success': false,
+          'message': 'Order not found',
+        };
+      } else if (response.statusCode == 403) {
+        return {
+          'success': false,
+          'message': 'Access denied - admin privileges required',
+        };
+      } else {
+        try {
+          final responseData = json.decode(response.body);
+          return {
+            'success': false,
+            'message': responseData['message'] ?? 'Failed to delete order',
+          };
+        } catch (parseError) {
+          return {
+            'success': false,
+            'message': 'Failed to delete order: ${response.statusCode}',
+          };
+        }
+      }
+    } catch (e) {
+      print('❌ Error in deleteOrder: $e');
+      return {
+        'success': false,
+        'message': 'Error deleting order: ${e.toString()}',
+      };
+    }
   }
 }

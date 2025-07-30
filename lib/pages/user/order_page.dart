@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -1065,7 +1067,7 @@ class _OrderPageState extends State<OrderPage> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
-                order.transferProof!,
+                "http://10.0.2.2:3000/${order.transferProof!}",
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
@@ -1269,9 +1271,9 @@ class _OrderPageState extends State<OrderPage> {
       }
 
       // Upload the image
-      final success = await context.read<OrderProvider>().uploadTransferProof(
+      final success = await context.read<OrderProvider>().updateOrderStatus(
         orderId: orderId,
-        imagePath: image.path,
+        transferProof: File(image.path),
       );
 
       // Close loading dialog
@@ -1293,8 +1295,12 @@ class _OrderPageState extends State<OrderPage> {
         );
       }
 
-      // Close the order details sheet if upload was successful
+      // Refresh orders list and close sheet if upload was successful
       if (success && mounted) {
+        // Refresh the orders list to show updated transfer proof
+        await context.read<OrderProvider>().loadUserOrders(refresh: true);
+        
+        // Close the order details sheet
         Navigator.of(context).pop();
       }
 

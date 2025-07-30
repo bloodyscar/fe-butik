@@ -5,6 +5,7 @@ import '../service/order_service.dart';
 
 class OrderProvider with ChangeNotifier {
   List<Order> _orders = [];
+  List<Order> _allOrders = []; // For admin - all orders
   bool _isLoading = false;
   String? _errorMessage;
   Order? _currentOrder;
@@ -15,6 +16,7 @@ class OrderProvider with ChangeNotifier {
 
   // Getters
   List<Order> get orders => _orders;
+  List<Order> get allOrders => _allOrders; // For admin
   bool get isLoading => _isLoading;
   bool get isCreatingOrder => _isCreatingOrder;
   String? get errorMessage => _errorMessage;
@@ -178,35 +180,17 @@ class OrderProvider with ChangeNotifier {
   // Update order status (admin function)
   Future<bool> updateOrderStatus({
     required int orderId,
-    required String status,
+    String? status,
+    File? transferProof,
   }) async {
     try {
-      final response = await OrderService.updateOrderStatus(
+      final response = await OrderService.updateOrder(
         orderId: orderId,
         status: status,
+        transferProof: transferProof,
       );
 
       if (response['success']) {
-        // Update the order in the list
-        final index = _orders.indexWhere((o) => o.id == orderId);
-        if (index != -1) {
-          _orders[index] = Order(
-            id: _orders[index].id,
-            userId: _orders[index].userId,
-            totalPrice: _orders[index].totalPrice,
-            shippingMethod: _orders[index].shippingMethod,
-            shippingAddress: _orders[index].shippingAddress,
-            shippingCost: _orders[index].shippingCost,
-            transferProof: _orders[index].transferProof,
-            status: status,
-            createdAt: _orders[index].createdAt,
-            updatedAt: DateTime.now(),
-            items: _orders[index].items,
-            itemsCount: _orders[index].itemsCount,
-          );
-          notifyListeners();
-        }
-
         _errorMessage = null;
         return true;
       } else {
@@ -346,5 +330,81 @@ class OrderProvider with ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  // Load all orders for admin management
+  Future<void> loadAllOrders({
+    bool refresh = false,
+    int page = 1,
+    int limit = 20,
+    String? status,
+    String? userId,
+  }) async {
+    if (_isLoading) return;
+
+    _isLoading = true;
+    _errorMessage = null;
+    
+    if (refresh) {
+      _allOrders.clear();
+    }
+    
+    notifyListeners();
+
+    try {
+      final response = await OrderService.getAllOrders(
+        page: page,
+        limit: limit,
+        status: status,
+        userId: userId,
+      );
+
+      if (response.success) {
+        if (refresh) {
+          _allOrders = response.orders;
+        } else {
+          _allOrders.addAll(response.orders);
+        }
+        _errorMessage = null;
+      } else {
+        _errorMessage = response.message ?? 'Failed to load orders';
+      }
+    } catch (e) {
+      _errorMessage = 'Error loading orders: ${e.toString()}';
+      debugPrint('Error in loadAllOrders: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Get all orders count by status for admin
+  Map<String, int> get allOrderCounts {
+    Map<String, int> counts = {};
+    for (Order order in _allOrders) {
+      counts[order.status] = (counts[order.status] ?? 0) + 1;
+    }
+    return counts;
+  }
+
+  // Filter all orders by status for admin
+  List<Order> getAllOrdersByStatus(String status) {
+    return _allOrders.where((order) => order.status == status).toList();
+  }
+
+  // Get total revenue for admin
+  double get totalRevenue {
+    return _allOrders.fold(0.0, (sum, order) => sum + order.totalPrice);
+  }
+
+  // Initialize admin orders
+  Future<void> initializeAdminOrders() async {
+    await loadAllOrders(refresh: true);
+  }
+
+  // Remove order from admin list (for UI updates after deletion)
+  void removeOrderFromAdminList(int orderId) {
+    _allOrders.removeWhere((order) => order.id == orderId);
+    notifyListeners();
   }
 }

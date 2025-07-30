@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/cart.dart';
 import '../service/cart_service.dart';
+import '../utils/price_formatter.dart';
 
 class CartProvider with ChangeNotifier {
   List<Cart> _carts = [];
@@ -38,7 +39,7 @@ class CartProvider with ChangeNotifier {
   }
 
   // Get formatted total amount
-  String get formattedTotalAmount => 'Rp ${totalAmount.toStringAsFixed(2)}';
+  String get formattedTotalAmount => PriceFormatter.formatPrice(totalAmount);
 
   // Check if cart is empty
   bool get isEmpty => _carts.isEmpty || allCartItems.isEmpty;

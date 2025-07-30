@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:io';
 import '../models/product.dart';
 import '../models/product_response.dart';
+import '../models/dashboard_response.dart';
 import '../service/product_service.dart';
 
 class ProductProvider with ChangeNotifier {
@@ -9,6 +10,11 @@ class ProductProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   ProductResponse? _lastResponse;
+
+  // Dashboard data
+  DashboardResponse? _dashboardResponse;
+  bool _isDashboardLoading = false;
+  String? _dashboardError;
 
   // Current filter state
   int _currentPage = 1;
@@ -31,6 +37,12 @@ class ProductProvider with ChangeNotifier {
   int get totalProducts => _lastResponse?.pagination?.totalProducts ?? 0;
   bool get hasNextPage => _lastResponse?.pagination?.hasNext ?? false;
   bool get hasPrevPage => _lastResponse?.pagination?.hasPrev ?? false;
+
+  // Dashboard getters
+  DashboardResponse? get dashboardResponse => _dashboardResponse;
+  DashboardData? get dashboardData => _dashboardResponse?.data;
+  bool get isDashboardLoading => _isDashboardLoading;
+  String? get dashboardError => _dashboardError;
 
   // Filter getters
   String? get selectedCategory => _selectedCategory;
@@ -246,8 +258,149 @@ class ProductProvider with ChangeNotifier {
     }
   }
 
+  // Delete a product
+  Future<Map<String, dynamic>> deleteProduct(int productId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await ProductService.deleteProduct(productId);
+
+      _isLoading = false;
+
+      if (response['success'] == true) {
+        
+        return {
+          'success': true,
+          'message': response['message'],
+        };
+      } else {
+        _errorMessage = response['message'];
+        notifyListeners();
+        
+        return {
+          'success': false,
+          'message': response['message'],
+        };
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      
+      return {
+        'success': false,
+        'message': 'Failed to delete product: $e',
+      };
+    }
+  }
+
+  // Update a product
+  Future<Map<String, dynamic>> updateProduct({
+    required int id,
+    required String name,
+    required String description,
+    required double price,
+    required int stock,
+    required String ageRange,
+    required int ageRangeId,
+    required String size,
+    required int sizeId,
+    required String customSize,
+    File? imageFile,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await ProductService.updateProduct(
+        id: id,
+        name: name,
+        description: description,
+        price: price,
+        stock: stock,
+        ageRange: ageRange,
+        ageRangeId: ageRangeId,
+        size: size,
+        sizeId: sizeId,
+        customSize: customSize,
+        imageFile: imageFile,
+      );
+
+      _isLoading = false;
+
+      if (response['success'] == true && response['product'] != null) {
+        // Update the product in the local list
+        final updatedProduct = response['product'];
+        final index = _products.indexWhere((product) => product.id == id);
+        if (index != -1) {
+          _products[index] = updatedProduct;
+          notifyListeners();
+        }
+        
+        return {
+          'success': true,
+          'message': response['message'],
+          'product': updatedProduct,
+        };
+      } else {
+        _errorMessage = response['message'];
+        notifyListeners();
+        
+        return {
+          'success': false,
+          'message': response['message'],
+          'product': null,
+        };
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      
+      return {
+        'success': false,
+        'message': 'Failed to update product: $e',
+        'product': null,
+      };
+    }
+  }
+
   // Initialize - load products for the first time
   Future<void> initialize() async {
     await loadProducts(reset: true);
+  }
+
+  // Load dashboard status
+  Future<void> loadDashboardStatus() async {
+    _isDashboardLoading = true;
+    _dashboardError = null;
+    notifyListeners();
+
+    try {
+      final response = await ProductService.dashboardStatus();
+
+      if (response.success) {
+        _dashboardResponse = response;
+        _dashboardError = null;
+      } else {
+        _dashboardError = response.message ?? 'Failed to load dashboard data';
+        _dashboardResponse = null;
+      }
+    } catch (e) {
+      _dashboardError = 'Error loading dashboard: ${e.toString()}';
+      _dashboardResponse = null;
+    }
+
+    _isDashboardLoading = false;
+    notifyListeners();
+  }
+
+  // Clear dashboard error
+  void clearDashboardError() {
+    _dashboardError = null;
+    notifyListeners();
   }
 }

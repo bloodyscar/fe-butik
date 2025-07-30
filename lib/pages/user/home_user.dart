@@ -800,10 +800,13 @@ class _HomeUserState extends State<HomeUser> {
                             color: Colors.grey[600],
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            product.ageRange,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: Colors.grey[600]),
+                          Flexible(
+                            child: Text(
+                              product.ageRange,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: Colors.grey[600]),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                         if (product.ageRange.isNotEmpty &&
@@ -813,10 +816,13 @@ class _HomeUserState extends State<HomeUser> {
                             style: TextStyle(color: Colors.grey[600]),
                           ),
                         if (product.size.isNotEmpty)
-                          Text(
-                            product.size,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: Colors.grey[600]),
+                          Flexible(
+                            child: Text(
+                              product.size,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: Colors.grey[600]),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                       ],
                     ),
@@ -827,13 +833,16 @@ class _HomeUserState extends State<HomeUser> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          PriceFormatter.formatPrice(product.price),
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue[600],
-                              ),
+                        Flexible(
+                          child: Text(
+                            PriceFormatter.formatPrice(product.price),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue[600],
+                                ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -897,109 +906,6 @@ class _HomeUserState extends State<HomeUser> {
         content: Text('All filters cleared'),
         backgroundColor: Colors.orange,
         duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  Widget _buildCategoryCard(
-    BuildContext context,
-    String title,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      width: 100,
-      margin: const EdgeInsets.only(right: 12),
-      child: Card(
-        elevation: 2,
-        child: InkWell(
-          onTap: () => _showComingSoon(context, title),
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 32, color: color),
-                const SizedBox(height: 8),
-                Text(
-                  title,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSizeCard(
-    BuildContext context,
-    String title,
-    String sizeLabel,
-    String ageRange,
-    Color color,
-  ) {
-    return Container(
-      width: 110,
-      margin: const EdgeInsets.only(right: 12),
-      child: Card(
-        elevation: 2,
-        child: InkWell(
-          onTap: () => _showComingSoon(context, '$title ($sizeLabel)'),
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Center(
-                    child: Text(
-                      sizeLabel,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  title,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  ageRange,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                    fontSize: 10,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

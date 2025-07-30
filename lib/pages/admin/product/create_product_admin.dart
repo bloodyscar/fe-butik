@@ -630,7 +630,7 @@ class _CreateProductAdminState extends State<CreateProductAdmin> {
           _clearForm();
           
           // Navigate back with the created product
-          Navigator.of(context).pop(response['product']);
+          Navigator.of(context).pop(response['data']);
         } else {
           // Show error message from server
           ScaffoldMessenger.of(context).showSnackBar(

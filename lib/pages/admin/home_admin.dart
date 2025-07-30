@@ -1,10 +1,27 @@
+import 'package:butik_evanty/pages/admin/order/order_management_admin.dart';
 import 'package:butik_evanty/pages/admin/product/product_management_admin.dart';
+import 'package:butik_evanty/service/session_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/product_provider.dart';
 
-class HomeAdmin extends StatelessWidget {
+class HomeAdmin extends StatefulWidget {
   const HomeAdmin({super.key});
+
+  @override
+  State<HomeAdmin> createState() => _HomeAdminState();
+}
+
+class _HomeAdminState extends State<HomeAdmin> {
+  @override
+  void initState() {
+    super.initState();
+    // Load dashboard data when the widget initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProductProvider>().loadDashboardStatus();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,10 +60,39 @@ class HomeAdmin extends StatelessWidget {
                       leading: const Icon(Icons.logout),
                       title: const Text('Logout'),
                       onTap: () async {
-                        await authProvider.logout();
-                        Navigator.of(
-                          context,
-                        ).pushNamedAndRemoveUntil('/login', (route) => false);
+                        // First close the popup menu
+                        Navigator.of(context).pop();
+                        
+                        // Show confirmation dialog
+                        final shouldLogout = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Logout'),
+                            content: const Text('Are you sure you want to logout?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(true),
+                                child: const Text('Logout'),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.red,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (shouldLogout == true) {
+                          // Show loading dialog while logging out
+                          await SessionManager.clearSession();
+                              Navigator.of(context).pushNamedAndRemoveUntil(
+                                '/login',
+                                (route) => false,
+                              );
+                        }
                       },
                     ),
                   ),
@@ -56,8 +102,8 @@ class HomeAdmin extends StatelessWidget {
           ),
         ],
       ),
-      body: Consumer<AuthProvider>(
-        builder: (context, authProvider, child) {
+      body: Consumer2<AuthProvider, ProductProvider>(
+        builder: (context, authProvider, productProvider, child) {
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -117,60 +163,125 @@ class HomeAdmin extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 // Quick Stats
-                Text(
-                  'Quick Stats',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(
-                      child: _buildStatCard(
+                    Text(
+                      'Quick Stats',
+                      style: Theme.of(
                         context,
-                        'Total Products',
-                        '156',
-                        Icons.inventory,
-                        Colors.blue,
-                      ),
+                      ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildStatCard(
-                        context,
-                        'Total Orders',
-                        '89',
-                        Icons.shopping_cart,
-                        Colors.green,
+                    if (!productProvider.isDashboardLoading)
+                      IconButton(
+                        onPressed: () => productProvider.loadDashboardStatus(),
+                        icon: const Icon(Icons.refresh),
+                        tooltip: 'Refresh Statistics',
                       ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        context,
-                        'Total Users',
-                        '234',
-                        Icons.people,
-                        Colors.orange,
+                
+                if (productProvider.isDashboardLoading)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                else if (productProvider.dashboardError != null)
+                  Card(
+                    elevation: 2,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: Colors.red[600],
+                            size: 48,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Failed to load statistics',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            productProvider.dashboardError!,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.grey[600],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: () => productProvider.loadDashboardStatus(),
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Retry'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red[600],
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildStatCard(
-                        context,
-                        'Revenue',
-                        'Rp 45M',
-                        Icons.monetization_on,
-                        Colors.purple,
+                  )
+                else
+                  Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatCard(
+                              context,
+                              'Total Products',
+                              productProvider.dashboardData?.summary.totalProducts.toString() ?? '0',
+                              Icons.inventory,
+                              Colors.blue,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildStatCard(
+                              context,
+                              'Total Orders',
+                              productProvider.dashboardData?.summary.totalOrders.toString() ?? '0',
+                              Icons.shopping_cart,
+                              Colors.green,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatCard(
+                              context,
+                              'Total Users',
+                              productProvider.dashboardData?.summary.totalUsers.toString() ?? '0',
+                              Icons.people,
+                              Colors.orange,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildStatCard(
+                              context,
+                              'Revenue',
+                              _formatRevenue(productProvider.dashboardData?.summary.totalRevenue),
+                              Icons.monetization_on,
+                              Colors.purple,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 const SizedBox(height: 24),
 
                 // Admin Actions
@@ -209,8 +320,12 @@ class HomeAdmin extends StatelessWidget {
                       Icons.list_alt,
                       Colors.green,
                       () {
-                        // TODO: Navigate to order management
-                        _showComingSoon(context, 'Order Management');
+                       Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const OrderManagementAdmin(),
+                          ),
+                        );
                       },
                     ),
                     _buildActionCard(
@@ -223,17 +338,7 @@ class HomeAdmin extends StatelessWidget {
                         _showComingSoon(context, 'User Management');
                       },
                     ),
-                    _buildActionCard(
-                      context,
-                      'Analytics',
-                      Icons.analytics,
-                      Colors.purple,
-                      () {
-                        // TODO: Navigate to analytics
-                        _showComingSoon(context, 'Analytics');
-                      },
-                    ),
-                  ],
+                    ],
                 ),
               ],
             ),
@@ -323,5 +428,25 @@ class HomeAdmin extends StatelessWidget {
         backgroundColor: Colors.blue,
       ),
     );
+  }
+
+  String _formatRevenue(dynamic revenue) {
+    if (revenue == null) return 'Rp 0';
+    
+    try {
+      final double amount = revenue is String ? double.parse(revenue) : revenue.toDouble();
+      
+      if (amount >= 1000000000) {
+        return 'Rp ${(amount / 1000000000).toStringAsFixed(0)}B';
+      } else if (amount >= 1000000) {
+        return 'Rp ${(amount / 1000000).toStringAsFixed(0)}M';
+      } else if (amount >= 1000) {
+        return 'Rp ${(amount / 1000).toStringAsFixed(0)}K';
+      } else {
+        return 'Rp ${amount.toStringAsFixed(0)}';
+      }
+    } catch (e) {
+      return 'Rp 0';
+    }
   }
 }

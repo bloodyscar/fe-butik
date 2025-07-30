@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/product_provider.dart';
 import '../../../utils/price_formatter.dart';
 import 'create_product_admin.dart';
+import 'edit_product_admin.dart';
 
 class ProductManagementAdmin extends StatefulWidget {
   const ProductManagementAdmin({super.key});
@@ -39,34 +40,36 @@ class _ProductManagementAdminState extends State<ProductManagementAdmin> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header Card
-                Card(
-                  elevation: 2,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.inventory,
-                          size: 48,
-                          color: Colors.blue[600],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Product Management',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue[700],
+                Center(
+                  child: Card(
+                    elevation: 2,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.inventory,
+                            size: 48,
+                            color: Colors.blue[600],
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Manage your product inventory',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
+                          const SizedBox(height: 8),
+                          Text(
+                            'Product Management',
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue[700],
+                            ),
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                          const SizedBox(height: 4),
+                          Text(
+                            'Manage your product inventory',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.grey[600],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -85,10 +88,11 @@ class _ProductManagementAdminState extends State<ProductManagementAdmin> {
                               builder: (context) => const CreateProductAdmin(),
                             ),
                           ).then((result) {
-                            // Refresh products if a new product was created
-                            if (result != null) {
+                            // Always refresh products when returning from create page
+                            // This ensures the list is updated regardless of the result
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
                               productProvider.refreshProducts();
-                            }
+                            });
                           });
                         },
                         icon: const Icon(Icons.add),
@@ -273,6 +277,13 @@ class _ProductManagementAdminState extends State<ProductManagementAdmin> {
                                           tooltip: 'Edit Product',
                                           color: Colors.orange[600],
                                         ),
+                                        // Delete Button
+                                        IconButton(
+                                          onPressed: () => _deleteProduct(product),
+                                          icon: const Icon(Icons.delete),
+                                          tooltip: 'Delete Product',
+                                          color: Colors.red[600],
+                                        ),
                                         // Stock Status
                                         Container(
                                           padding: const EdgeInsets.symmetric(
@@ -431,6 +442,22 @@ class _ProductManagementAdminState extends State<ProductManagementAdmin> {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            _deleteProduct(product);
+                          },
+                          icon: const Icon(Icons.delete),
+                          label: const Text('Delete'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red[600],
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () => Navigator.of(context).pop(),
                           icon: const Icon(Icons.close),
@@ -452,34 +479,19 @@ class _ProductManagementAdminState extends State<ProductManagementAdmin> {
   }
 
   void _editProduct(product) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Edit Product'),
-          content: const Text('Edit product functionality will be implemented here.\n\nFeatures to include:\n• Edit product name, description, price\n• Update stock quantity\n• Change category, age range, size\n• Replace product image\n• Toggle active/inactive status'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                // TODO: Implement edit product page
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Edit product feature coming soon!'),
-                    backgroundColor: Colors.blue,
-                  ),
-                );
-              },
-              child: const Text('Coming Soon'),
-            ),
-          ],
-        );
-      },
-    );
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProductAdmin(product: product),
+      ),
+    ).then((result) {
+      // Always refresh products when returning from edit page
+      // This ensures the list is updated regardless of the result
+      final productProvider = Provider.of<ProductProvider>(context, listen: false);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        productProvider.refreshProducts();
+      });
+    });
   }
 
   Widget _buildDetailRow(String label, String value) {
@@ -514,6 +526,162 @@ class _ProductManagementAdminState extends State<ProductManagementAdmin> {
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  void _deleteProduct(product) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.warning, color: Colors.red[600]),
+              const SizedBox(width: 8),
+              const Text('Delete Product'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Are you sure you want to delete this product?'),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text('Price: ${PriceFormatter.formatPrice(product.price)}'),
+                    Text('Stock: ${product.stock}'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'This action cannot be undone.',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _confirmDeleteProduct(product);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[600],
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmDeleteProduct(product) async {
+    final productProvider = Provider.of<ProductProvider>(context, listen: false);
+    
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      final result = await productProvider.deleteProduct(product.id);
+      
+      // Hide loading dialog
+      if (mounted) Navigator.of(context).pop();
+      
+      if (result['success'] == true) {
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(result['message'] ?? 'Product deleted successfully!')),
+                ],
+              ),
+              backgroundColor: Colors.green[600],
+              duration: const Duration(seconds: 3),
+            ),
+          );
+          
+          // Refresh the product list after successful deletion
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            productProvider.refreshProducts();
+          });
+        }
+      } else {
+        // Show error message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.error, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(result['message'] ?? 'Failed to delete product')),
+                ],
+              ),
+              backgroundColor: Colors.red[600],
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Hide loading dialog
+      if (mounted) Navigator.of(context).pop();
+      
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(child: Text('Failed to delete product: $e')),
+              ],
+            ),
+            backgroundColor: Colors.red[600],
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildStatItem(String label, String value, IconData icon, Color color) {
