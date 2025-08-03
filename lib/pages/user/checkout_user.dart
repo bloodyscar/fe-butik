@@ -364,41 +364,7 @@ class _CheckoutUserState extends State<CheckoutUser> {
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          TextFormField(
-            controller: _addressController,
-            decoration: InputDecoration(
-              labelText: 'Complete Address',
-              hintText: 'Enter your complete shipping address',
-              prefixIcon: const Icon(Icons.location_on),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey[300]!),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey[300]!),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.blue[600]!, width: 2),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.red, width: 2),
-              ),
-              focusedErrorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.red, width: 2),
-              ),
-            ),
-            maxLines: 3,
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Shipping address is required';
-              }
-              return null;
-            },
-          ),
+           
         ],
       ),
     );
@@ -703,6 +669,22 @@ class _CheckoutUserState extends State<CheckoutUser> {
   ) async {
     // Validate form
     if (!_formKey.currentState!.validate()) {
+      // Show specific notification for empty address
+      if (_addressController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.warning, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Please enter your shipping address'),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
       return;
     }
 

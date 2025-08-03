@@ -7,6 +7,7 @@ import '../service/product_service.dart';
 
 class ProductProvider with ChangeNotifier {
   List<Product> _products = [];
+  List<Product> _allProducts = []; // Store all products for filtering
   bool _isLoading = false;
   String? _errorMessage;
   ProductResponse? _lastResponse;
@@ -29,6 +30,9 @@ class ProductProvider with ChangeNotifier {
 
   // Getters
   List<Product> get products => _products;
+  List<Product> get allProducts => _allProducts;
+  int get filteredProductsCount => _products.length;
+  int get totalProductsCount => _allProducts.length;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   ProductResponse? get lastResponse => _lastResponse;
@@ -81,9 +85,11 @@ class ProductProvider with ChangeNotifier {
 
       if (response.success) {
         if (reset || _currentPage == 1) {
+          _allProducts = response.products; // Store all products
           _products = response.products;
         } else {
           // Append for pagination
+          _allProducts.addAll(response.products);
           _products.addAll(response.products);
         }
         _errorMessage = null;
@@ -114,7 +120,7 @@ class ProductProvider with ChangeNotifier {
     await loadProducts(reset: true);
   }
 
-  // Set filters and reload
+  // Set filters and filter from local products
   Future<void> setFilters({
     String? category,
     String? ageRange,
@@ -132,7 +138,75 @@ class ProductProvider with ChangeNotifier {
     _maxPrice = maxPrice;
     _inStock = inStock;
 
-    await loadProducts(reset: true);
+    // Filter from existing products
+    _applyFilters();
+    notifyListeners();
+  }
+
+  // Apply filters to _allProducts and update _products
+  void _applyFilters() {
+    List<Product> filteredProducts = List.from(_allProducts);
+
+    // Apply category filter
+    if (_selectedCategory != null && _selectedCategory!.isNotEmpty && _selectedCategory != 'All Categories') {
+      filteredProducts = filteredProducts.where((product) => 
+        product.category.toLowerCase() == _selectedCategory!.toLowerCase()
+      ).toList();
+    }
+
+    // Apply age range filter
+    if (_selectedAgeRange != null && _selectedAgeRange!.isNotEmpty && _selectedAgeRange != 'All Ages') {
+      filteredProducts = filteredProducts.where((product) => 
+        product.ageRange.toLowerCase() == _selectedAgeRange!.toLowerCase()
+      ).toList();
+    }
+
+    // Apply size filter
+    if (_selectedSize != null && _selectedSize!.isNotEmpty && _selectedSize != 'All Sizes') {
+      filteredProducts = filteredProducts.where((product) => 
+        product.size.toLowerCase() == _selectedSize!.toLowerCase()
+      ).toList();
+    }
+
+    // Apply search filter
+    if (_searchQuery != null && _searchQuery!.isNotEmpty) {
+      final query = _searchQuery!.toLowerCase();
+      filteredProducts = filteredProducts.where((product) => 
+        product.name.toLowerCase().contains(query) ||
+        product.description.toLowerCase().contains(query) ||
+        product.category.toLowerCase().contains(query)
+      ).toList();
+    }
+
+    // Apply price range filter
+    if (_minPrice != null) {
+      filteredProducts = filteredProducts.where((product) {
+        final productPrice = double.tryParse(product.price) ?? 0.0;
+        return productPrice >= _minPrice!;
+      }).toList();
+    }
+
+    if (_maxPrice != null) {
+      filteredProducts = filteredProducts.where((product) {
+        final productPrice = double.tryParse(product.price) ?? 0.0;
+        return productPrice <= _maxPrice!;
+      }).toList();
+    }
+
+    // Apply stock filter
+    if (_inStock != null) {
+      if (_inStock == true) {
+        filteredProducts = filteredProducts.where((product) => 
+          product.stock > 0
+        ).toList();
+      } else {
+        filteredProducts = filteredProducts.where((product) => 
+          product.stock == 0
+        ).toList();
+      }
+    }
+
+    _products = filteredProducts;
   }
 
   // Clear all filters
@@ -145,31 +219,37 @@ class ProductProvider with ChangeNotifier {
     _maxPrice = null;
     _inStock = null;
 
-    await loadProducts(reset: true);
+    // Reset to show all products
+    _products = List.from(_allProducts);
+    notifyListeners();
   }
 
   // Search products
   Future<void> searchProducts(String query) async {
     _searchQuery = query;
-    await loadProducts(reset: true);
+    _applyFilters();
+    notifyListeners();
   }
 
   // Filter by category
   Future<void> filterByCategory(String category) async {
     _selectedCategory = category;
-    await loadProducts(reset: true);
+    _applyFilters();
+    notifyListeners();
   }
 
   // Filter by age range
   Future<void> filterByAgeRange(String ageRange) async {
     _selectedAgeRange = ageRange;
-    await loadProducts(reset: true);
+    _applyFilters();
+    notifyListeners();
   }
 
   // Filter by size
   Future<void> filterBySize(String size) async {
     _selectedSize = size;
-    await loadProducts(reset: true);
+    _applyFilters();
+    notifyListeners();
   }
 
   // Get product by ID

@@ -5,6 +5,8 @@ import 'package:http_parser/http_parser.dart';
 import '../models/product.dart';
 import '../models/product_response.dart';
 import '../models/dashboard_response.dart';
+import '../models/size_category.dart';
+import '../models/age_category.dart';
 
 class ProductService {
   // API base URL for products
@@ -211,6 +213,72 @@ class ProductService {
         success: false,
         message: 'Network error: ${e.toString()}',
         data: null,
+      );
+    }
+  }
+
+  // Get all size categories
+  static Future<SizeCategoriesResponse> getAllSizeCategories() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${_baseUrl}/size-categories'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return SizeCategoriesResponse.fromJson(data);
+      } else {
+        final errorData = json.decode(response.body);
+        return SizeCategoriesResponse(
+          success: false,
+          sizeCategories: [],
+          message: errorData['message'] ?? 'Failed to fetch size categories',
+          errors: errorData['errors'] ?? {},
+        );
+      }
+    } catch (e) {
+      return SizeCategoriesResponse(
+        success: false,
+        sizeCategories: [],
+        message: 'Network error: ${e.toString()}',
+        errors: {'network': e.toString()},
+      );
+    }
+  }
+
+  // Get all age categories
+  static Future<AgeCategoriesResponse> getAllAgeCategories() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${_baseUrl}/age-categories'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return AgeCategoriesResponse.fromJson(data);
+      } else {
+        final errorData = json.decode(response.body);
+        return AgeCategoriesResponse(
+          success: false,
+          ageCategories: [],
+          message: errorData['message'] ?? 'Failed to fetch age categories',
+          errors: errorData['errors'] ?? {},
+        );
+      }
+    } catch (e) {
+      return AgeCategoriesResponse(
+        success: false,
+        ageCategories: [],
+        message: 'Network error: ${e.toString()}',
+        errors: {'network': e.toString()},
       );
     }
   }

@@ -1,5 +1,6 @@
 import 'package:butik_evanty/pages/admin/order/order_management_admin.dart';
 import 'package:butik_evanty/pages/admin/product/product_management_admin.dart';
+import 'package:butik_evanty/pages/admin/user_management.dart';
 import 'package:butik_evanty/service/session_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -45,16 +46,7 @@ class _HomeAdminState extends State<HomeAdmin> {
                     ),
                   ),
                   const PopupMenuItem(child: Divider()),
-                  PopupMenuItem(
-                    child: ListTile(
-                      leading: const Icon(Icons.settings),
-                      title: const Text('Settings'),
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        // TODO: Navigate to settings
-                      },
-                    ),
-                  ),
+                  
                   PopupMenuItem(
                     child: ListTile(
                       leading: const Icon(Icons.logout),
@@ -334,11 +326,15 @@ class _HomeAdminState extends State<HomeAdmin> {
                       Icons.people_alt,
                       Colors.orange,
                       () {
-                        // TODO: Navigate to user management
-                        _showComingSoon(context, 'User Management');
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const UserManagement(),
+                          ),
+                        );
                       },
                     ),
-                    ],
+                     ],
                 ),
               ],
             ),
@@ -417,15 +413,6 @@ class _HomeAdminState extends State<HomeAdmin> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _showComingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature coming soon!'),
-        backgroundColor: Colors.blue,
       ),
     );
   }

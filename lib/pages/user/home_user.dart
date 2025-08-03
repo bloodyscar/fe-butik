@@ -4,11 +4,15 @@ import '../../providers/auth_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../models/product.dart';
+import '../../models/size_category.dart';
+import '../../models/age_category.dart';
 import '../../service/session_manager.dart';
+import '../../service/product_service.dart';
 import '../../utils/price_formatter.dart';
 import 'detail_product_page.dart';
 import 'cart_user.dart';
 import 'order_page.dart';
+import 'profile_user_page.dart';
 
 class HomeUser extends StatefulWidget {
   const HomeUser({super.key});
@@ -20,25 +24,10 @@ class HomeUser extends StatefulWidget {
 class _HomeUserState extends State<HomeUser> {
   String? selectedAgeFilter;
   String? selectedSizeFilter;
-
-  final List<String> ageFilters = [
-    'All Ages',
-    '0-6 Months',
-    '6-12 Months',
-    '1-3 Years',
-    '3-5 Years',
-    '5+ Years',
-  ];
-
-  final List<String> sizeFilters = [
-    'All Sizes',
-    'Newborn (NB)',
-    'Small (S)',
-    'Medium (M)',
-    'Large (L)',
-    'Extra Large (XL)',
-    'Toddler (T)',
-  ];
+  List<SizeCategory> sizeCategories = [];
+  bool isLoadingSizeCategories = false;
+  List<AgeCategory> ageCategories = [];
+  bool isLoadingAgeCategories = false;
 
   final List<String> categoryFilters = [
     'All Categories',
@@ -57,7 +46,183 @@ class _HomeUserState extends State<HomeUser> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProductProvider>().initialize();
       _initializeOrderData();
+      _loadSizeCategories();
+      _loadAgeCategories();
     });
+  }
+
+  void _loadSizeCategories() async {
+    setState(() {
+      isLoadingSizeCategories = true;
+    });
+
+    try {
+      final response = await ProductService.getAllSizeCategories();
+      if (response.success) {
+        setState(() {
+          sizeCategories = response.sizeCategories;
+          isLoadingSizeCategories = false;
+        });
+      } else {
+        setState(() {
+          isLoadingSizeCategories = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load size categories: ${response.message}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        isLoadingSizeCategories = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error loading size categories: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _loadAgeCategories() async {
+    setState(() {
+      isLoadingAgeCategories = true;
+    });
+
+    try {
+      final response = await ProductService.getAllAgeCategories();
+      if (response.success) {
+        setState(() {
+          ageCategories = response.ageCategories;
+          isLoadingAgeCategories = false;
+        });
+      } else {
+        setState(() {
+          isLoadingAgeCategories = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load age categories: ${response.message}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        isLoadingAgeCategories = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error loading age categories: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  List<DropdownMenuItem<String>> _buildSizeDropdownItems() {
+    List<DropdownMenuItem<String>> items = [
+      const DropdownMenuItem<String>(
+        value: 'All Sizes',
+        child: Text(
+          'All Sizes',
+          style: TextStyle(fontSize: 14),
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    ];
+
+    if (isLoadingSizeCategories) {
+      items.add(
+        const DropdownMenuItem<String>(
+          value: null,
+          child: Row(
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Loading sizes...',
+                style: TextStyle(fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      // Add size categories from API
+      for (final sizeCategory in sizeCategories) {
+        items.add(
+          DropdownMenuItem<String>(
+            value: sizeCategory.label,
+            child: Text(
+              sizeCategory.label,
+              style: const TextStyle(fontSize: 14),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        );
+      }
+    }
+
+    return items;
+  }
+
+  List<DropdownMenuItem<String>> _buildAgeDropdownItems() {
+    List<DropdownMenuItem<String>> items = [
+      const DropdownMenuItem<String>(
+        value: 'All Ages',
+        child: Text(
+          'All Ages',
+          style: TextStyle(fontSize: 14),
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    ];
+
+    if (isLoadingAgeCategories) {
+      items.add(
+        const DropdownMenuItem<String>(
+          value: null,
+          child: Row(
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Loading ages...',
+                style: TextStyle(fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      // Add age categories from API
+      for (final ageCategory in ageCategories) {
+        items.add(
+          DropdownMenuItem<String>(
+            value: ageCategory.label,
+            child: Text(
+              ageCategory.label,
+              style: const TextStyle(fontSize: 14),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        );
+      }
+    }
+
+    return items;
   }
 
   void _initializeOrderData() async {
@@ -104,39 +269,7 @@ class _HomeUserState extends State<HomeUser> {
                     ),
                   ),
                   const PopupMenuItem(child: Divider()),
-                  PopupMenuItem(
-                    child: ListTile(
-                      leading: const Icon(Icons.shopping_bag),
-                      title: const Text('My Orders'),
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const OrderPage()),
-                        );
-                      },
-                    ),
-                  ),
-                  PopupMenuItem(
-                    child: ListTile(
-                      leading: const Icon(Icons.favorite),
-                      title: const Text('Wishlist'),
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        _showComingSoon(context, 'Wishlist');
-                      },
-                    ),
-                  ),
-                  PopupMenuItem(
-                    child: ListTile(
-                      leading: const Icon(Icons.settings),
-                      title: const Text('Settings'),
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        _showComingSoon(context, 'Settings');
-                      },
-                    ),
-                  ),
+                  
                   PopupMenuItem(
                     child: ListTile(
                       leading: const Icon(Icons.logout),
@@ -397,17 +530,8 @@ class _HomeUserState extends State<HomeUser> {
                                     filled: true,
                                     fillColor: Colors.white,
                                   ),
-                                  items: ageFilters.map((String age) {
-                                    return DropdownMenuItem<String>(
-                                      value: age,
-                                      child: Text(
-                                        age,
-                                        style: const TextStyle(fontSize: 14),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    );
-                                  }).toList(),
-                                  onChanged: (String? newValue) {
+                                  items: _buildAgeDropdownItems(),
+                                  onChanged: isLoadingAgeCategories ? null : (String? newValue) {
                                     setState(() {
                                       selectedAgeFilter = newValue;
                                     });
@@ -443,17 +567,8 @@ class _HomeUserState extends State<HomeUser> {
                                     filled: true,
                                     fillColor: Colors.white,
                                   ),
-                                  items: sizeFilters.map((String size) {
-                                    return DropdownMenuItem<String>(
-                                      value: size,
-                                      child: Text(
-                                        size,
-                                        style: const TextStyle(fontSize: 14),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    );
-                                  }).toList(),
-                                  onChanged: (String? newValue) {
+                                  items: _buildSizeDropdownItems(),
+                                  onChanged: isLoadingSizeCategories ? null : (String? newValue) {
                                     setState(() {
                                       selectedSizeFilter = newValue;
                                     });
@@ -465,9 +580,7 @@ class _HomeUserState extends State<HomeUser> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
-
-                      const SizedBox(height: 12),
+                       const SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -475,16 +588,7 @@ class _HomeUserState extends State<HomeUser> {
                             onPressed: _clearFilters,
                             child: const Text('Clear All'),
                           ),
-                          const SizedBox(width: 8),
-                          ElevatedButton.icon(
-                            onPressed: _applyFilters,
-                            icon: const Icon(Icons.search),
-                            label: const Text('Apply Filters'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue[600],
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
+                          
                         ],
                       ),
                     ],
@@ -701,13 +805,10 @@ class _HomeUserState extends State<HomeUser> {
               );
               break;
             case 2:
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => const CartUser()),
+                MaterialPageRoute(builder: (context) => const ProfileUserPage()),
               );
-              break;
-            case 3:
-              _showComingSoon(context, 'Profile');
               break;
           }
         },
@@ -906,15 +1007,6 @@ class _HomeUserState extends State<HomeUser> {
         content: Text('All filters cleared'),
         backgroundColor: Colors.orange,
         duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _showComingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature coming soon!'),
-        backgroundColor: Colors.blue,
       ),
     );
   }

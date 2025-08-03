@@ -33,10 +33,10 @@ class CartItem {
       quantity: json['quantity'] ?? 0,
       productName: json['product_name'] ?? '',
       productDescription: json['product_description'] ?? '',
-      productPrice: json['product_price'] ?? '0.00',
+      productPrice: json['product_price']?.toString() ?? '0.00',
       productImage: json['product_image'] ?? '',
       productStock: json['product_stock'] ?? 0,
-      subtotal: json['subtotal'] ?? '0.00',
+      subtotal: json['subtotal']?.toString() ?? '0.00',
     );
   }
 
@@ -103,7 +103,9 @@ class Cart {
       userEmail: json['user_email'] ?? '',
       items: items,
       totalItems: json['total_items'] ?? 0,
-      totalAmount: (json['total_amount'] ?? 0).toDouble(),
+      totalAmount: (json['total_amount'] is int) 
+          ? (json['total_amount'] as int).toDouble()
+          : (json['total_amount'] ?? 0).toDouble(),
     );
   }
 

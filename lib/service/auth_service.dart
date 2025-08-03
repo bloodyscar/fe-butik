@@ -192,4 +192,183 @@ class AuthService {
   static Future<bool> logoutLocally() async {
     return await SessionManager.clearSession();
   }
+
+  // Get all users function
+  static Future<Map<String, dynamic>> getAllUsers() async {
+    try {
+      // Get current token for authentication
+      final token = await SessionManager.getToken();
+      
+      final response = await http.get(
+        Uri.parse('$_baseUrl/all'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Success - parse the response
+        final responseData = jsonDecode(response.body);
+        
+        // Check if the response has a users array
+        if (responseData['success'] == true && responseData['data'] != null) {
+          List<User> users = [];
+          
+          // Parse users from the nested response structure
+          if (responseData['data']['users'] != null) {
+            users = (responseData['data']['users'] as List)
+                .map((userData) => User.fromJson(userData))
+                .toList();
+          }
+          
+          return {
+            'success': true,
+            'message': responseData['message'] ?? 'Users retrieved successfully',
+            'users': users,
+            'pagination': responseData['data']['pagination'],
+            'filter': responseData['data']['filter'],
+          };
+        } else {
+          return {
+            'success': false,
+            'message': responseData['message'] ?? 'Failed to retrieve users',
+            'users': <User>[],
+          };
+        }
+      } else {
+        // Error response
+        final errorData = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': errorData['message'] ?? 'Failed to fetch users',
+          'users': <User>[],
+          'errors': errorData['errors'] ?? {},
+        };
+      }
+    } catch (e) {
+      // Network or other error
+      return {
+        'success': false,
+        'message': 'Network error: ${e.toString()}',
+        'users': <User>[],
+        'errors': {'network': e.toString()},
+      };
+    }
+  }
+
+  // Update user function with id, name, email, phone, password parameters
+  static Future<AuthResponse> updateUsers({
+    required int id,
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+  }) async {
+    try {
+      // Get current token for authentication
+      final token = await SessionManager.getToken();
+      
+      final response = await http.put(
+        Uri.parse('$_baseUrl/edit/$id'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'phone': phone,
+          'password': password,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        // Update successful
+        final responseData = jsonDecode(response.body);
+        return AuthResponse.fromJson(responseData);
+      } else {
+        // Update failed
+        final errorData = jsonDecode(response.body);
+        return AuthResponse(
+          success: false,
+          message: errorData['message'] ?? 'User update failed',
+          errors: errorData['errors'] ?? {},
+        );
+      }
+    } catch (e) {
+      // Network or other error
+      return AuthResponse(
+        success: false,
+        message: 'Network error: ${e.toString()}',
+        errors: {'network': e.toString()},
+      );
+    }
+  }
+
+  // Delete user function with id parameter
+  static Future<AuthResponse> deleteUsers({
+    required int id,
+  }) async {
+    try {
+      // Get current token for authentication
+      final token = await SessionManager.getToken();
+      
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/delete/$id'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        // Delete successful
+        final responseData = response.body.isNotEmpty 
+            ? jsonDecode(response.body) 
+            : {'success': true, 'message': 'User deleted successfully'};
+            
+        return AuthResponse(
+          success: true,
+          message: responseData['message'] ?? 'User deleted successfully',
+        );
+      } else {
+        // Delete failed
+        final errorData = jsonDecode(response.body);
+        String errorMessage = errorData['message'] ?? 'User deletion failed';
+        
+        // Handle specific database constraint errors
+        if (errorData['error'] != null) {
+          final error = errorData['error'];
+          if (error is Map && error['code'] == 'ER_ROW_IS_REFERENCED_2') {
+            if (error['sqlMessage'] != null && error['sqlMessage'].toString().contains('carts')) {
+              errorMessage = 'Cannot delete user: User has items in cart. Please clear the cart first.';
+            } else if (error['sqlMessage'] != null && error['sqlMessage'].toString().contains('orders')) {
+              errorMessage = 'Cannot delete user: User has order history. User deletion not allowed.';
+            } else {
+              errorMessage = 'Cannot delete user: User has related data that must be removed first.';
+            }
+          } else if (error is Map && error['errno'] == 1451) {
+            errorMessage = 'Cannot delete user: User has related data in the system.';
+          }
+        }
+        
+        return AuthResponse(
+          success: false,
+          message: errorMessage,
+          errors: errorData['errors'] ?? {},
+        );
+      }
+    } catch (e) {
+      // Network or other error
+      return AuthResponse(
+        success: false,
+        message: 'Network error: ${e.toString()}',
+        errors: {'network': e.toString()},
+      );
+    }
+  }
 }

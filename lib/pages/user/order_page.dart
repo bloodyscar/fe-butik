@@ -7,7 +7,7 @@ import '../../providers/order_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/order.dart';
 import 'home_user.dart';
-import 'cart_user.dart';
+import 'profile_user_page.dart';
 
 class OrderPage extends StatefulWidget {
   const OrderPage({super.key});
@@ -320,10 +320,6 @@ class _OrderPageState extends State<OrderPage> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Order'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart),
-            label: 'Cart',
-          ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
         onTap: (index) {
@@ -338,13 +334,10 @@ class _OrderPageState extends State<OrderPage> {
               // Already on order page
               break;
             case 2:
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => const CartUser()),
+                MaterialPageRoute(builder: (context) => const ProfileUserPage()),
               );
-              break;
-            case 3:
-              _showComingSoon(context, 'Profile');
               break;
           }
         },
@@ -1304,7 +1297,7 @@ class _OrderPageState extends State<OrderPage> {
         Navigator.of(context).pop();
       }
 
-    } catch (e) {
+    } catch (e) { 
       // Close loading dialog if open
       if (mounted && Navigator.canPop(context)) {
         Navigator.of(context).pop();
@@ -1320,14 +1313,5 @@ class _OrderPageState extends State<OrderPage> {
         );
       }
     }
-  }
-
-  void _showComingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature coming soon!'),
-        backgroundColor: Colors.blue,
-      ),
-    );
   }
 }
