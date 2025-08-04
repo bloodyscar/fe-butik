@@ -3,8 +3,6 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../service/auth_service.dart';
 import '../../service/session_manager.dart';
-import 'home_user.dart';
-import 'order_page.dart';
 
 class ProfileUserPage extends StatefulWidget {
   const ProfileUserPage({super.key});
@@ -702,36 +700,6 @@ class _ProfileUserPageState extends State<ProfileUserPage> {
               ],
             ),
           );
-        },
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue[600],
-        unselectedItemColor: Colors.grey,
-        currentIndex: 2, // Profile tab is selected
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Order'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const HomeUser()),
-              );
-              break;
-            case 1:
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const OrderPage()),
-              );
-              break;
-            case 2:
-              // Already on profile page
-              break;
-          }
         },
       ),
     );

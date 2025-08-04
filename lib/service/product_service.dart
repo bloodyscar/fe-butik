@@ -10,8 +10,8 @@ import '../models/age_category.dart';
 
 class ProductService {
   // API base URL for products
-  // static const String _baseUrl = 'http://10.0.2.2:3000/products';
-  static const String _baseUrl = 'http://10.0.2.2:3000/products';
+  // static const String _baseUrl = 'http://157.66.34.221:8081/products';
+  static const String _baseUrl = 'http://157.66.34.221:8081/products';
 
   // Get all products with optional filters and pagination
   static Future<ProductResponse> getAllProducts({
@@ -221,7 +221,7 @@ class ProductService {
   static Future<SizeCategoriesResponse> getAllSizeCategories() async {
     try {
       final response = await http.get(
-        Uri.parse('${_baseUrl}/size-categories'),
+        Uri.parse('${_baseUrl}/size-category'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -254,7 +254,7 @@ class ProductService {
   static Future<AgeCategoriesResponse> getAllAgeCategories() async {
     try {
       final response = await http.get(
-        Uri.parse('${_baseUrl}/age-categories'),
+        Uri.parse('${_baseUrl}/age-category'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

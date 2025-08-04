@@ -6,7 +6,7 @@ import 'session_manager.dart';
 import 'package:http_parser/http_parser.dart';
 
 class OrderService {
-  static const String baseUrl = 'http://10.0.2.2:3000/orders';
+  static const String baseUrl = 'http://157.66.34.221:8081/orders';
 
   /// Get headers with authentication token
   static Future<Map<String, String>> _getHeaders() async {

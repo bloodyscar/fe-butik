@@ -6,8 +6,6 @@ import 'package:image_picker/image_picker.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/order.dart';
-import 'home_user.dart';
-import 'profile_user_page.dart';
 
 class OrderPage extends StatefulWidget {
   const OrderPage({super.key});
@@ -311,36 +309,6 @@ class _OrderPageState extends State<OrderPage> {
             ),
           ),
         ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue[600],
-        unselectedItemColor: Colors.grey,
-        currentIndex: 1, // Order tab is selected
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Order'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const HomeUser()),
-              );
-              break;
-            case 1:
-              // Already on order page
-              break;
-            case 2:
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const ProfileUserPage()),
-              );
-              break;
-          }
-        },
       ),
     );
   }
@@ -921,7 +889,7 @@ class _OrderPageState extends State<OrderPage> {
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
-                        "http://10.0.2.2:3000/${item.productImage}",
+                        "http://157.66.34.221:8081/${item.productImage}",
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return Icon(
@@ -1060,7 +1028,7 @@ class _OrderPageState extends State<OrderPage> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
-                "http://10.0.2.2:3000/${order.transferProof!}",
+                "http://157.66.34.221:8081/${order.transferProof!}",
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(

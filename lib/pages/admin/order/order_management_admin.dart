@@ -431,7 +431,7 @@ class _OrderManagementAdminState extends State<OrderManagementAdmin> {
                     child: InkWell(
                       onTap: () => _showImagePreview(order.transferProof!),
                       child: Image.network(
-                        "http://10.0.2.2:3000/${order.transferProof!}",
+                        "http://157.66.34.221:8081/${order.transferProof!}",
                         fit: BoxFit.cover,
                         loadingBuilder: (context, child, loadingProgress) {
                           if (loadingProgress == null) return child;
@@ -1081,7 +1081,7 @@ class _OrderManagementAdminState extends State<OrderManagementAdmin> {
                   minScale: 0.5,
                   maxScale: 4.0,
                   child: Image.network(
-                    "http://10.0.2.2:3000/${imageUrl}",
+                    "http://157.66.34.221:8081/${imageUrl}",
                     fit: BoxFit.contain,
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;

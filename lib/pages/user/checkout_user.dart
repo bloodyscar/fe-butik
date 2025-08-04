@@ -303,7 +303,7 @@ class _CheckoutUserState extends State<CheckoutUser> {
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(
-                      'http://10.0.2.2:3000/${item.productImage}',
+                      'http://157.66.34.221:8081/${item.productImage}',
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return const Icon(Icons.image_not_supported, size: 24);

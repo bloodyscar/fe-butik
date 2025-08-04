@@ -39,7 +39,7 @@ class _DetailProductPageState extends State<DetailProductPage> {
               color: Colors.grey[100],
               child: widget.product.image.isNotEmpty
                   ? Image.network(
-                      "http://10.0.2.2:3000/${widget.product.image}",
+                      "http://157.66.34.221:8081/${widget.product.image}",
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return _buildImagePlaceholder();

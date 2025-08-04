@@ -339,7 +339,7 @@ class _CartUserState extends State<CartUser> {
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
-                        'http://10.0.2.2:3000/${cartItem.productImage}',
+                        'http://157.66.34.221:8081/${cartItem.productImage}',
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return const Icon(

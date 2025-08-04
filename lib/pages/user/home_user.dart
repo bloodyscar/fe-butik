@@ -12,7 +12,6 @@ import '../../utils/price_formatter.dart';
 import 'detail_product_page.dart';
 import 'cart_user.dart';
 import 'order_page.dart';
-import 'profile_user_page.dart';
 
 class HomeUser extends StatefulWidget {
   const HomeUser({super.key});
@@ -783,36 +782,6 @@ class _HomeUserState extends State<HomeUser> {
           );
         },
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue[600],
-        unselectedItemColor: Colors.grey,
-        currentIndex: 0, // Home tab is selected
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Order'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              // Already on home
-              break;
-            case 1:
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const OrderPage()),
-              );
-              break;
-            case 2:
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const ProfileUserPage()),
-              );
-              break;
-          }
-        },
-      ),
     );
   }
 
@@ -849,7 +818,7 @@ class _HomeUserState extends State<HomeUser> {
                           top: Radius.circular(12),
                         ),
                         child: Image.network(
-                          "http://10.0.2.2:3000/${product.image}",
+                          "http://157.66.34.221:8081/${product.image}",
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                             return const Center(

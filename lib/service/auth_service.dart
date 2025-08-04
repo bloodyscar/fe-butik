@@ -6,7 +6,7 @@ import 'session_manager.dart';
 
 class AuthService {
   // API base URL for authentication
-  static const String _baseUrl = 'http://10.0.2.2:3000/users';
+  static const String _baseUrl = 'http://157.66.34.221:8081/users';
 
   // Register function with name, email, password, phone parameters
   static Future<AuthResponse> register({

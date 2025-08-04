@@ -230,7 +230,7 @@ class _ProductManagementAdminState extends State<ProductManagementAdmin> {
                                         ? ClipRRect(
                                             borderRadius: BorderRadius.circular(8),
                                             child: Image.network(
-                                              "http://10.0.2.2:3000/${product.image}",
+                                              "http://157.66.34.221:8081/${product.image}",
                                               width: 50,
                                               height: 50,
                                               fit: BoxFit.cover,
@@ -383,7 +383,7 @@ class _ProductManagementAdminState extends State<ProductManagementAdmin> {
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: Image.network(
-                                "http://10.0.2.2:3000/${product.image}",
+                                "http://157.66.34.221:8081/${product.image}",
                                 height: 200,
                                 width: double.infinity,
                                 fit: BoxFit.cover,

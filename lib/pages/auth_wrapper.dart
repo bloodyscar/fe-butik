@@ -1,6 +1,6 @@
 import 'package:butik_evanty/pages/admin/home_admin.dart';
 import 'package:butik_evanty/pages/login_page.dart';
-import 'package:butik_evanty/pages/user/home_user.dart';
+import 'package:butik_evanty/pages/user/main_navigation.dart';
 import 'package:butik_evanty/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -51,7 +51,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
             return const HomeAdmin();
           } else {
             // Default to user home for 'user' role or any other role
-            return const HomeUser();
+            return const MainNavigation();
           }
         } else {
           // User is not logged in, show login page
