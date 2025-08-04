@@ -27,7 +27,7 @@ class _ProductManagementAdminState extends State<ProductManagementAdmin> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Product Management'),
+        title: const Text('Manajemen Produk'),
         backgroundColor: Colors.blue[600],
         foregroundColor: Colors.white,
         elevation: 2,
@@ -54,7 +54,7 @@ class _ProductManagementAdminState extends State<ProductManagementAdmin> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Product Management',
+                            'Manajemen Produk',
                             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: Colors.blue[700],
@@ -62,7 +62,7 @@ class _ProductManagementAdminState extends State<ProductManagementAdmin> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Manage your product inventory',
+                            'Kelola inventaris produk Anda',
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Colors.grey[600],
                             ),
@@ -96,7 +96,7 @@ class _ProductManagementAdminState extends State<ProductManagementAdmin> {
                           });
                         },
                         icon: const Icon(Icons.add),
-                        label: const Text('Add New Product'),
+                        label: const Text('Tambah Produk'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
@@ -114,7 +114,7 @@ class _ProductManagementAdminState extends State<ProductManagementAdmin> {
                           productProvider.refreshProducts();
                         },
                         icon: const Icon(Icons.refresh),
-                        label: const Text('Refresh List'),
+                        label: const Text('Refresh'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue[600],
                           foregroundColor: Colors.white,
@@ -139,22 +139,22 @@ class _ProductManagementAdminState extends State<ProductManagementAdmin> {
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         _buildStatItem(
-                          'Total Products',
+                          'Total Produk',
                           productProvider.totalProducts.toString(),
                           Icons.inventory_2,
                           Colors.blue,
                         ),
                         _buildStatItem(
-                          'In Stock',
+                          'Stok Hampir Habis',
                           productProvider.products
-                              .where((p) => p.inStock)
+                              .where((p) => p.stock >= 1 && p.stock <= 3)
                               .length
                               .toString(),
-                          Icons.check_circle,
-                          Colors.green,
+                          Icons.warning,
+                          Colors.orange,
                         ),
                         _buildStatItem(
-                          'Out of Stock',
+                          'Stok Habis',
                           productProvider.products
                               .where((p) => !p.inStock)
                               .length
@@ -297,7 +297,7 @@ class _ProductManagementAdminState extends State<ProductManagementAdmin> {
                                             borderRadius: BorderRadius.circular(12),
                                           ),
                                           child: Text(
-                                            product.inStock ? 'In Stock' : 'Out of Stock',
+                                            product.inStock ? 'Stok Hampir Habis' : 'Stok Habis',
                                             style: TextStyle(
                                               color: product.inStock
                                                   ? Colors.green[700]

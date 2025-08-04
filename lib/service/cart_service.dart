@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/cart.dart';
 
 class CartService {
-  static const String baseUrl = 'http://10.0.2.2:3000';
+  static const String baseUrl = 'http://157.66.34.221:8081';
 
   /// Get all carts for a specific user
   ///

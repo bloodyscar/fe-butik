@@ -483,4 +483,18 @@ class ProductProvider with ChangeNotifier {
     _dashboardError = null;
     notifyListeners();
   }
+
+  // Set search results (for dedicated search API calls)
+  void setSearchResults(List<Product> searchResults) {
+    _products = searchResults;
+    // Clear filters since this is a direct search result
+    _selectedCategory = null;
+    _selectedAgeRange = null;
+    _selectedSize = null;
+    _searchQuery = null;
+    _minPrice = null;
+    _maxPrice = null;
+    _inStock = null;
+    notifyListeners();
+  }
 }

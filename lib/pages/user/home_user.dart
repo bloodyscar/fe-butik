@@ -27,6 +27,10 @@ class _HomeUserState extends State<HomeUser> {
   bool isLoadingSizeCategories = false;
   List<AgeCategory> ageCategories = [];
   bool isLoadingAgeCategories = false;
+  
+  // Search functionality
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
 
   final List<String> categoryFilters = [
     'All Categories',
@@ -48,6 +52,12 @@ class _HomeUserState extends State<HomeUser> {
       _loadSizeCategories();
       _loadAgeCategories();
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _loadSizeCategories() async {
@@ -234,6 +244,85 @@ class _HomeUserState extends State<HomeUser> {
       // Load user orders silently (don't show loading indicators)
       await orderProvider.loadUserOrders(refresh: true);
     }
+  }
+
+  void _performSearch() async {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a search term'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    try {
+      // Call the dedicated search API endpoint
+      final response = await ProductService.searchProduct(query);
+      
+      if (response.success) {
+        // Update ProductProvider with search results
+        final productProvider = context.read<ProductProvider>();
+        productProvider.setSearchResults(response.products);
+        
+        setState(() {
+          _isSearching = false;
+        });
+
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     content: Text('Found ${response.products.length} results for "$query"'),
+        //     backgroundColor: Colors.green,
+        //   ),
+        // );
+      } else {
+        setState(() {
+          _isSearching = false;
+        });
+        
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(
+        //     content: Text('Search failed: ${response.message}'),
+        //     backgroundColor: Colors.red,
+        //   ),
+        // );
+      }
+    } catch (e) {
+      setState(() {
+        _isSearching = false;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Search error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _clearSearch() async {
+    _searchController.clear();
+    await context.read<ProductProvider>().clearFilters();
+    
+    // Also clear other filters
+    setState(() {
+      selectedAgeFilter = null;
+      selectedSizeFilter = null;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Search cleared'),
+        backgroundColor: Colors.blue,
+      ),
+    );
   }
 
   @override
@@ -477,6 +566,94 @@ class _HomeUserState extends State<HomeUser> {
                         : const SizedBox.shrink();
                   },
                 ),
+
+                // Search Section
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[300]!),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 3,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.search, color: Colors.blue),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Search Products',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _searchController,
+                              decoration: InputDecoration(
+                                hintText: 'Search products',
+                                prefixIcon: const Icon(Icons.search),
+                                suffixIcon: _searchController.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear),
+                                        onPressed: _clearSearch,
+                                      )
+                                    : null,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 12,
+                                ),
+                              ),
+                              onSubmitted: (value) => _performSearch(),
+                              onChanged: (value) {
+                                setState(() {}); // Rebuild to show/hide clear button
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton.icon(
+                            onPressed: _isSearching ? null : _performSearch,
+                            icon: _isSearching
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.search),
+                            label: Text(_isSearching ? 'Searching...' : 'Search'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue[600],
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
 
                 // Filter Section
                 Container(

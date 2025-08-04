@@ -177,6 +177,39 @@ class ProductService {
     return getAllProducts(page: page, limit: limit, search: query);
   }
 
+  // Search products with dedicated endpoint
+  static Future<ProductResponse> searchProduct(String query) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${_baseUrl}/search?q=$query'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return ProductResponse.fromJson(responseData);
+      } else {
+        final errorData = jsonDecode(response.body);
+        return ProductResponse(
+          success: false,
+          message: errorData['message'] ?? 'Failed to search products',
+          products: [],
+          errors: errorData['errors'] ?? {},
+        );
+      }
+    } catch (e) {
+      return ProductResponse(
+        success: false,
+        message: 'Network error: ${e.toString()}',
+        products: [],
+        errors: {'network': e.toString()},
+      );
+    }
+  }
+
   // Get featured products (this could be a special endpoint or filter)
   static Future<ProductResponse> getFeaturedProducts({int limit = 6}) async {
     return getAllProducts(
@@ -190,7 +223,7 @@ class ProductService {
   static Future<DashboardResponse> dashboardStatus() async {
     try {
       final response = await http.get(
-        Uri.parse('${_baseUrl}/dashboard'),
+        Uri.parse('${_baseUrl}/dashboard/stats'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

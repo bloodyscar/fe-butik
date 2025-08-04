@@ -1,5 +1,6 @@
 import 'package:butik_evanty/pages/admin/order/order_management_admin.dart';
 import 'package:butik_evanty/pages/admin/product/product_management_admin.dart';
+import 'package:butik_evanty/pages/admin/sales_report.dart';
 import 'package:butik_evanty/pages/admin/user_management.dart';
 import 'package:butik_evanty/service/session_manager.dart';
 import 'package:flutter/material.dart';
@@ -330,6 +331,19 @@ class _HomeAdminState extends State<HomeAdmin> {
                           context,
                           MaterialPageRoute(
                             builder: (context) => const UserManagement(),
+                          ),
+                        );
+                      },
+                    ),_buildActionCard(
+                      context,
+                      'Sales Reports',
+                      Icons.bar_chart,
+                      Colors.red,
+                      () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SalesReport(),
                           ),
                         );
                       },

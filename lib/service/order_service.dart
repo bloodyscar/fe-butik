@@ -631,6 +631,90 @@ class OrderService {
     }
   }
 
+  /// Get sales report for a specific date range
+  ///
+  /// [startDate] - Start date in YYYY-MM-DD format (e.g., "2025-08-01")
+  /// [endDate] - End date in YYYY-MM-DD format (e.g., "2025-08-30")
+  /// [query] - Optional search query to filter results (e.g., product name, customer name)
+  ///
+  /// Returns [Map<String, dynamic>] containing sales report data
+  static Future<Map<String, dynamic>> getSalesReport({
+    required String startDate,
+    required String endDate,
+    String? query,
+  }) async {
+    try {
+      // Build query parameters
+      Map<String, String> queryParams = {
+        'start_date': startDate,
+        'end_date': endDate,
+      };
+
+      // Add search query if provided
+      if (query != null && query.trim().isNotEmpty) {
+        queryParams['query'] = query.trim();
+      }
+
+      // Build URI with query parameters
+      final uri = Uri.parse('$baseUrl/reports/sales')
+          .replace(queryParameters: queryParams);
+
+      print('📡 Fetching sales report from: $uri');
+
+      // Get authenticated headers
+      final headers = await _getHeaders();
+
+      final response = await http.get(
+        uri,
+        headers: headers,
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Request timeout - please check your connection');
+        },
+      );
+
+      print('📡 Sales report response status: ${response.statusCode}');
+      print('📡 Sales report response body preview: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}...');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        print('✅ Successfully fetched sales report');
+        
+        return {
+          'success': true,
+          'data': responseData,
+        };
+      } else if (response.statusCode == 400) {
+        final errorData = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': errorData['message'] ?? 'Invalid date range parameters',
+          'errors': errorData['errors'] ?? {},
+        };
+      } else if (response.statusCode == 403) {
+        return {
+          'success': false,
+          'message': 'Access denied - admin privileges required',
+        };
+      } else {
+        final errorData = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': errorData['message'] ?? 'Failed to fetch sales report',
+          'errors': errorData['errors'] ?? {},
+        };
+      }
+    } catch (e) {
+      print('❌ Error in getSalesReport: $e');
+      return {
+        'success': false,
+        'message': 'Network error: ${e.toString()}',
+        'errors': {'network': e.toString()},
+      };
+    }
+  }
+
   /// Delete an order by ID (for admin use)
   ///
   /// [orderId] - The ID of the order to delete

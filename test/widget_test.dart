@@ -10,7 +10,7 @@ void main() {
   // Uncomment and run these when your API server is running
   group('Live API Integration Tests', () {
     // WARNING: These tests will make actual API calls to your server
-    // Make sure your API server is running on http://10.0.2.2:3000
+    // Make sure your API server is running on http://157.66.34.221:8081
     // before running these tests
 
     group('Register Integration Tests', () {
